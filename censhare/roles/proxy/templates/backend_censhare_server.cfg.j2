@@ -1,0 +1,21 @@
+{{ ansible_managed | comment }}
+backend censhare_server
+    mode http
+    balance leastconn
+    # Forwarded headers for backend
+    http-request set-header X-Forwarded-Port %[dst_port]
+    http-request add-header X-Forwarded-Proto https if { ssl_fc }
+    http-request add-header X-Forwarded-For %[src]
+    
+    option http-server-close
+    option forwardfor
+    
+    option httpchk GET /monitoring/health
+    http-check expect rstring ^{\"status\":\"UP\"}$
+    default-server inter 1s downinter 3s rise 15 fall 15
+    timeout check 1s
+    timeout client 2h
+    timeout server 2h
+{% for backend in censhare_proxy_backends_css %}
+    server {{ backend.name }} {{ backend.address }}:{{ censhare_proxy_css_port }} check
+{% endfor %}

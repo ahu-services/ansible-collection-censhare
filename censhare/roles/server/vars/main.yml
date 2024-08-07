@@ -1,0 +1,12 @@
+---
+# vars file for censhare_server
+censhare_home: "/opt/corpus"
+censhare_bin: "{{ censhare_home }}/bin"
+censhare_config_path: "{{ censhare_home }}/cscs/app/config"
+censhare_services_path: "{{ censhare_home }}/cscs/app/services"
+censhare_modules_path: "{{ censhare_home }}/cscs/app/modules"
+censhare_create_schema_script: "{{ censhare_home }}/css/database/postgresql-create-db.sql"
+
+# vars for certbot
+acme_directory_staging: "https://acme-staging-v02.api.letsencrypt.org/directory"
+acme_directory_live: "https://acme-v02.api.letsencrypt.org/directory"

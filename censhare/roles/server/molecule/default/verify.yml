@@ -1,0 +1,21 @@
+---
+- name: Verify
+  hosts: censhare
+  gather_facts: true
+  tasks:
+    - name: Populate package facts
+      ansible.builtin.package_facts:
+    - name: "Include censhare Installation Tests"
+      ansible.builtin.include_tasks: "verify/verify_css_install.yml"
+    - name: "Install Python3-yaml"
+      ansible.builtin.dnf:
+        name: python3-yaml,python3
+        state: present
+    - name: "Include CWG Configuration Tests"
+      ansible.builtin.include_tasks: "verify/verify_cgw_config.yml"
+    - name: "Include Webpack Installation Tests"
+      ansible.builtin.include_tasks: "verify/verify_wp_install.yml"
+    - name: "Include Webpack Service Tests"
+      ansible.builtin.include_tasks: "verify/verify_wp_services.yml"
+    - name: "Include censhare Configuration Tests"
+      ansible.builtin.include_tasks: "verify/verify_css_config.yml"

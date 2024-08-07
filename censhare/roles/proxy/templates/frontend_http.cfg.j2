@@ -1,0 +1,45 @@
+{{ ansible_managed | comment }}
+frontend http_front
+    bind *:80
+    # Redirect all HTTP traffic to HTTPS
+    http-request redirect scheme https code 301 if !{ ssl_fc }
+
+frontend https_front
+    bind *:443 ssl crt {{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}.pem
+    acl is_websocket hdr(Upgrade) -i WebSocket
+    use_backend censhare_cloud_gateway if is_websocket
+    
+    default_backend censhare_cloud_gateway
+
+    {% for hint in censhare_proxy_redirect_kc_idp_hint | default([]) -%}
+    {% if loop.index == 1 -%}
+    # Additional redirects for keycloak authentications per URL parameter
+    # ACL to check if kc_idp_hint is not set
+    acl has_idp_hint url_param(kc_idp_hint) -m found
+    {% endif %}
+    {%- if hint.method == 'uri' -%}
+    # ACL to check if cs-original-uri begins with {{ hint.uri }}
+    acl is_{{ hint.name }} url_param(cs-original-uri) -m beg {{ hint.uri }}
+    # Redirect rule
+    http-request redirect location %[url]&kc_idp_hint={{ hint.name }} if is_{{ hint.name }} !has_idp_hint
+    {% endif %}
+    {% if hint.method == 'param' %}
+    acl auth_{{ hint }}   urlp(auth)       {{ hint }}
+    http-request redirect code 301 location https://%[hdr(host)]/auth/realms/censhare/protocol/openid-connect/auth?response_type=code&client_id=censhare5&scope=openid\ profile\ email&kc_idp_hint={{ hint.name }}&redirect_uri=https://%[hdr(host)]%[path] if auth_{{ hint.name }}
+    {% endif %}
+    {% endfor %}
+
+    acl path_auth path_beg -i /auth
+    use_backend keycloak if path_auth
+
+    acl path_ws path_beg -i /ws
+    acl path_tempDownload path_beg -i /tempDownload
+    use_backend censhare_server if path_ws or path_tempDownload
+
+    {% if censhare_proxy_backends_cgw | length > 1 %}
+    # Check for specific server parameter in URL
+    {% for backend in censhare_proxy_backends_cgw %}
+    acl use_server_{{ backend.name }} url_param(server) -m str {{ backend.name }}
+    use_backend {{ backend.name }} if use_server_{{ backend.name }}
+    {% endfor %}
+    {% endif %}

@@ -1,0 +1,69 @@
+---
+- name: Install Python cryptography package
+  become: true
+  ansible.builtin.dnf:
+    name: python3-cryptography
+    state: present
+
+- name: Ensure SSL directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_proxy_ssl_directory }}"
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+
+- name: Ensure SSL certs directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}"
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+
+- name: Generate private key for HAProxy
+  become: true
+  community.crypto.openssl_privatekey:  
+    path: "{{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}/haproxy.key"
+    size: 4096
+    mode: '0600'
+    owner: root
+    group: root    
+
+- name: Generate CSR for HAProxy
+  become: true
+  community.crypto.openssl_csr:
+    path: "{{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}/haproxy.csr"
+    privatekey_path: "{{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}/haproxy.key"
+    common_name: "{{ censhare_proxy_ssl_domain }}"
+    mode: '0600'
+    owner: root
+    group: root      
+
+- name: Generate self-signed SSL certificate
+  become: true
+  community.crypto.x509_certificate:
+    path: "{{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}/haproxy.pem"
+    privatekey_path: "{{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}/haproxy.key"
+    csr_path: "{{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}/haproxy.csr"
+    provider: selfsigned
+    mode: '0600'
+    owner: root
+    group: root
+  notify:
+    - Reload haproxy    
+
+- name: Combine certificate and private key
+  become: true
+  ansible.builtin.assemble:
+    src: "{{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}"
+    dest: "{{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}.pem"
+    regexp: '.*(key|pem)$'
+    delimiter: '\n'
+    mode: '0600'
+    owner: root
+    group: root    
+  notify:
+    - Reload haproxy

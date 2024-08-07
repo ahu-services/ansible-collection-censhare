@@ -1,0 +1,27 @@
+---
+- name: Ensure libselinux-python is installed
+  become: true
+  ansible.builtin.dnf: 
+    name: libselinux-python3,policycoreutils-python3
+    state: present
+
+- name: Allow HaProxy to bind to port 80
+  become: true
+  community.general.seport:
+    ports: 80
+    proto: tcp
+    setype: http_port_t
+
+- name: Allow HaProxy to bind to port 443
+  become: true
+  community.general.seport:
+    ports: 443
+    proto: tcp
+    setype: http_port_t
+
+- name: Set haproxy_connect_any boolean to on
+  become: true
+  ansible.posix.seboolean:
+    name: haproxy_connect_any
+    state: true
+    persistent: true

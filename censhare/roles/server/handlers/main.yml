@@ -1,0 +1,13 @@
+---
+# handlers file for censhare_server
+- name: Restart Cloud Gateway
+  become: true
+  ansible.builtin.service:
+    name: censhare.core-cloud-gateway
+    state: restarted
+
+- name: Restart Static Resource Server
+  become: true
+  ansible.builtin.service:
+    name: censhare.static-resource-server
+    state: restarted

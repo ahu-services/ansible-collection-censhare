@@ -1,0 +1,58 @@
+# censhare Proxy Ansible Role
+
+This Ansible role installs and configures HAProxy for use in a censhare environment. It includes configuration for handling SSL, various backend services, and specific proxy settings for different censhare components.
+
+## Requirements
+
+- Ansible 2.1 or higher.
+- Target hosts should be running a compatible Linux distribution with HAProxy available.
+
+## Role Variables
+
+- `censhare_proxy_backends`: Define a list of default backend systems running the services Keycloak, censhare-Server Web, censhare-Server RMI, and censhare Cloud Gateway.
+- `censhare_proxy_backends_keycloak`: Define a list of backend servers that provide Keycloak only. This will override the usage for Keycloak from `censhare_proxy_backends`.
+- `censhare_proxy_backends_css`: Define a list of backend servers that provide censhare Web only. This will override the usage for censhare Web from `censhare_proxy_backends`.
+- `censhare_proxy_backends_rmi`: Define a list of backend servers that provide censhare RMI only. This will override the usage for censhare RMI from `censhare_proxy_backends`.
+- `censhare_proxy_backends_cgw`: Define a list of backend servers that provide censhare Cloud Gateway only. This will override the usage for censhare Cloud Gateway from `censhare_proxy_backends`.
+- `censhare_proxy_keycloak_port`: Define the default port for Keycloak backend services. Default: `8080`.
+- `censhare_proxy_cgw_port`: Define the default port for censhare Cloud Gateway backend services. Default: `8082`.
+- `censhare_proxy_css_port`: Define the default port for censhare Web backend services. Default: `9000`.
+- `censhare_proxy_rmi_port`: Define the default port for censhare RMI backend services. Default: `30546`.
+- `censhare_proxy_default_redirect`: Path to redirect to from `/` root path. Default: `censhare5/client`.
+- `censhare_proxy_ssl`: Which SSL service to use in the backend. Valid options: `self-signed`, `lets-encrypt`, or `commercial`. Default: `self-signed`.
+- `censhare_proxy_ssl_domain`: Domain used for SSL certificates.
+
+## Dependencies
+
+There are no external role dependencies. However, this role requires several base packages to be present on the system, which are typically covered under the installation tasks within the role.
+
+## Example Playbook
+
+Including an example of how to use your role (for instance, with variables passed in as parameters):
+
+```yaml
+---
+- name: "Setup HAProxy"
+  hosts: loadbalancer
+  roles:
+    - role: ahu_services.censhare.proxy
+      vars:
+        censhare_proxy_backends:
+          - name: censhare-server.internal
+            address: censhare-server.internal
+        censhare_proxy_backends_keycloak:
+          - name: auth.internal
+            address: auth.internal
+        censhare_proxy_ssl: commercial
+        censhare_proxy_ssl_domain: censhare.example.com
+```
+
+License
+-------
+
+BSD
+
+Author Information
+------------------
+
+This role was created in 2024 by Andreas Hubert. For more information, contact andreas.hubert@ahu.services

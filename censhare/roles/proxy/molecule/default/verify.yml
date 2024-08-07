@@ -1,0 +1,66 @@
+---
+- name: Verify
+  hosts: loadbalancer
+  gather_facts: false
+  tasks:
+    - name: Populate package facts
+      ansible.builtin.package_facts:
+    - name: "Assert the HAProxy RPM is installed"
+      ansible.builtin.assert:
+        that:
+          - "'haproxy' in ansible_facts.packages"
+        fail_msg: "The haproxy RPM is not installed"
+        success_msg: "The haproxy RPM is installed"
+    - name: Populate service facts
+      ansible.builtin.service_facts:
+    - name: "Assert the HAProxy is running"
+      ansible.builtin.assert:
+        that:
+          - "'haproxy' in ansible_facts.packages"
+        fail_msg: "The haproxy RPM is not installed"
+        success_msg: "The haproxy RPM is installed"
+
+    # Verify HAProxy routes to Cloud Gateway
+    - name: Verify Cloud Gateway at localhost:443/
+      ansible.builtin.uri:
+        url: https://localhost:443/
+        return_content: true
+        validate_certs: false
+      register: result_cloud_gateway
+      failed_when: "'Welcome to Cloud Gateway' not in result_cloud_gateway.content"
+
+    # Verify HAProxy routes to Keycloak
+    - name: Verify Keycloak at localhost:443/auth
+      ansible.builtin.uri:
+        url: https://localhost:443/auth/
+        return_content: true
+        validate_certs: false
+      register: result_keycloak
+      failed_when: "'Welcome to Keycloak' not in result_keycloak.content"
+
+    # Verify HAProxy routes to censhare-Server on /ws
+    - name: Verify censhare-Server at localhost:443/ws
+      ansible.builtin.uri:
+        url: https://localhost:443/ws/
+        return_content: true
+        validate_certs: false
+      register: result_censhare_ws
+      failed_when: "'Welcome to censhare-Server' not in result_censhare_ws.content"
+
+    # Verify HAProxy routes to censhare-Server on /tempDownload
+    - name: Verify censhare-Server at localhost:443/tempDownload
+      ansible.builtin.uri:
+        url: https://localhost:443/tempDownload/
+        return_content: true
+        validate_certs: false
+      register: result_censhare_tempdownload
+      failed_when: "'Welcome to censhare-Server' not in result_censhare_tempdownload.content"
+
+    # Verify HAProxy routes to censhare-RMI
+    - name: Verify censhare-RMI at localhost:30546
+      ansible.builtin.uri:
+        url: https://localhost:30546/
+        return_content: true
+        validate_certs: false
+      register: result_censhare_rmi
+      failed_when: "'Welcome to censhare-RMI' not in result_censhare_rmi.content"

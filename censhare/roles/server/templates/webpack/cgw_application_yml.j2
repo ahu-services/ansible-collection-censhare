@@ -1,0 +1,91 @@
+{{ ansible_managed | comment }}
+## Service port
+server.port: 8082
+spring.zipkin.enabled: false
+server.use-forward-headers: true
+
+# domain where Keycloak runs at (without protocol)
+#  This is the single place to reconfigure domain
+KEYCLOAK_DOMAIN: {{ censhare_keycloak_domain }}
+# Keycloak (or, in general, any OpenID-Connect) API base
+KEYCLOAK_REALM_NAME: {{ censhare_keycloak_realm }}
+AUTH_OPENID_URL: https://${KEYCLOAK_DOMAIN}/auth/realms/${KEYCLOAK_REALM_NAME}/protocol/openid-connect
+
+# INTERNAL hostname (and optionally also a colon and port number) used to connect to the censhare server
+#   no protocol, http:// and ws:// is added automatically
+#   warning: this is usually NOT the public domain used by users (in most cases, it is actually firewalled)
+CENSHARE_SERVER_HOST_PORT: {{ censhare_server_host_port }}
+
+# INTERNAL hostname (and optionally also a port) used to connect to the Static Resource Server
+SRS_HOST_PORT: {{ censhare_srs_host_port }}
+
+# Keycloak Client ID
+spring.security.oauth2.client.registration.keycloak.client-id: {{ censhare_keycloak_client_id }}
+spring.security.oauth2.client.registration.keycloak.client-name: {{ censhare_keycloak_client_name }}
+spring.security.oauth2.client.registration.keycloak.client-secret: {{ censhare_keycloak_client_secret }}
+
+# CGW Routing configuration
+cg.logoutUrl: {{ censhare_cgw_brandings | map(attribute='path') | product(['/logout']) | map('join') | join(',') }}
+
+spring.cloud.gateway.routes:
+{% for branding in censhare_cgw_brandings %}
+        - id: {{ branding.name }}_rest_endpoint
+          uri: http://${CENSHARE_SERVER_HOST_PORT}
+          predicates:
+            - Path={{ branding.path }}/rest/service/webserver/**
+          filters:
+            - RewritePath={{ branding.path }}/rest/service/webserver/(?<segment>.*), /ws/rest/service/webserver/$\{segment}
+            - CustomTokenRelay
+
+        - id: {{ branding.name }}_forward_rest_endpoint
+          uri: http://${CENSHARE_SERVER_HOST_PORT}
+          predicates:
+            - Path={{ branding.path }}/rest/**
+          filters:
+            - RewritePath={{ branding.path }}/rest/(?<segment>.*), /forward/rest/$\{segment}
+            - CustomTokenRelay
+
+        - id: {{ branding.name }}_upload_endpoint
+          uri: http://${CENSHARE_SERVER_HOST_PORT}
+          predicates:
+            - Path={{ branding.path }}/upload/**
+          filters:
+            - RewritePath={{ branding.path }}/upload/(?<segment>.*), /webserver/upload/$\{segment}
+            - CustomTokenRelay
+
+        - id: {{ branding.name }}_websocket_endpoint
+          uri: ws://${CENSHARE_SERVER_HOST_PORT}
+          predicates:
+            - Path={{ branding.path }}/channel/
+          filters:
+            - RewritePath={{ branding.path }}/(?<segment>/?.*)/, /webserver/websocket/$\{segment}
+            - CustomTokenRelay
+
+        - id: {{ branding.name }}_change_password_redirect
+          uri: https://${KEYCLOAK_DOMAIN}
+          predicates:
+            - Path={{ branding.path }}/change-password
+          filters:
+            - SetPath=/auth/realms/${KEYCLOAK_REALM_NAME}/account
+
+        - id: {{ branding.name }}_branding
+          uri: http://${SRS_HOST_PORT}
+          predicates:
+            - Path={{ branding.path }}/**
+          filters:
+            - RewritePath={{ branding.path }}/(?<segment>.*), /$\{segment}
+            - RewritePath={{ branding.path }}, /
+            - CustomTokenRelay
+            - AddRequestHeader=Branding, {{ branding.name }}
+{% endfor %}
+
+        - id: static_resources
+          uri: http://${SRS_HOST_PORT}
+          predicates:
+            - Path=/**
+          filters:
+            - CustomTokenRelay
+            - RemoveRequestHeader=Cookie
+            - AddResponseHeader=Set-Cookie, CENSHARE_USER_LOGIN==============
+            # Passing default branding for customers that have more than one branding
+            - AddRequestHeader=Branding, {{ censhare_cgw_default_branding.name }}

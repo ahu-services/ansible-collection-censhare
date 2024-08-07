@@ -1,0 +1,9 @@
+{{ ansible_managed | comment }}
+backend keycloak
+    # Forwarded headers for backend
+    http-request set-header X-Forwarded-Port %[dst_port]
+    http-request add-header X-Forwarded-Proto https if { ssl_fc }
+    http-request add-header X-Forwarded-For %[src]
+{% for backend in censhare_proxy_backends_keycloak %}
+    server {{ backend.name }} {{ backend.address }}:{{ censhare_proxy_keycloak_port }} check
+{% endfor %}

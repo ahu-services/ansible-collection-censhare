@@ -1,0 +1,38 @@
+---
+- name: "Install firewall package"
+  become: true
+  ansible.builtin.dnf:
+    name: python3-firewall
+    state: present
+
+- name: Open port censhare RMI in the firewall
+  become: true
+  ansible.posix.firewalld:
+    port: 30546/tcp
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Open port censhare Web in the firewall
+  become: true
+  ansible.posix.firewalld:
+    port: 9000/tcp
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Open port CGW in the firewall
+  become: true
+  ansible.posix.firewalld:
+    port: 8082/tcp
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Open port SRS in the firewall
+  become: true
+  ansible.posix.firewalld:
+    port: 8081/tcp
+    permanent: true
+    state: enabled
+    immediate: true
