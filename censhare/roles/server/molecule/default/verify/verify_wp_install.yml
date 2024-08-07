@@ -1,0 +1,39 @@
+---
+- name: "Check the existence and properties of the unpacked directory"
+  ansible.builtin.stat:
+    path: /opt/webpack/
+  register: webpack_dir
+
+- name: "Assert that the Webpack directory exists"
+  ansible.builtin.assert:
+    that:
+      - webpack_dir.stat.exists
+      - webpack_dir.stat.isdir
+    fail_msg: "Webpack directory does not exist at /opt/webpack/"
+
+- name: "Assert correct owner and group of the Webpack directory"
+  ansible.builtin.assert:
+    that:
+      - webpack_dir.stat.pw_name == 'corpus'
+      - webpack_dir.stat.gr_name == 'corpus'
+    fail_msg: "The Webpack directory owner or group is incorrect."
+
+- name: "List contents of the Webpack directory"
+  ansible.builtin.find:
+    paths: /opt/webpack/censhare5/en/
+    file_type: file
+  register: webpack_files
+
+- name: "Assert that unpacked files are present"
+  ansible.builtin.assert:
+    that:
+      - webpack_files.matched > 0
+    fail_msg: "No files were unpacked in the Webpack directory."
+
+# Optional: Check for specific files or patterns
+- name: "Check for specific folders in the unpacked content"
+  ansible.builtin.assert:
+    that:
+      - "'/opt/webpack/censhare5/en/index.html' in (webpack_files.files | map(attribute='path') | list)"
+      - "'/opt/webpack/censhare5/en/xeditor.html' in (webpack_files.files | map(attribute='path') | list)"
+    fail_msg: "Expected file 'index.html' or 'xeditor.html' not found in Webpack directory."

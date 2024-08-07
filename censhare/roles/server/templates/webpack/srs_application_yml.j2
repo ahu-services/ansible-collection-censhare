@@ -1,0 +1,34 @@
+{{ ansible_managed | comment }}
+## Service port
+server.port: 8081
+spring.zipkin.enabled: false
+
+KEYCLOAK_DOMAIN: {{ censhare_keycloak_domain }}
+AUTHENTICATION_SERVER_BASE_URL: https://${KEYCLOAK_DOMAIN}
+KEYCLOAK_REALM_NAME: {{ censhare_keycloak_realm }}
+
+AUTH_OPENID_URL: ${AUTHENTICATION_SERVER_BASE_URL}/auth/realms/${KEYCLOAK_REALM_NAME}/protocol/openid-connect
+
+# disable white label error page with custom white label error page
+# check out resources/static folder
+server:
+  error:
+    path: "/error"
+    whitelabel:
+      enabled: false
+
+##logging
+#logging.level.root: INFO
+#logging.level.com.censhare: INFO
+#logging.level.org.apache.http: INFO
+#logging.level.org.springframework.security: INFO
+
+##application server connect, please replace with URL to your censhare-Servert System
+application.server.rest.url: http://localhost:9000/forward/rest/
+
+##keycloak authentication url, please replace with URL to your keycloak authentication realm
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri: ${AUTHENTICATION_SERVER_BASE_URL}/auth/realms/censhare/protocol/openid-connect/certs
+
+##webpack path
+#webserver.content-dir: /opt/webpack
+#webserver.temp.folder: /tmp/upload

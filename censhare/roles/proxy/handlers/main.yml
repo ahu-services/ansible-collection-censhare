@@ -1,0 +1,7 @@
+---
+# handlers file for censhare_proxy
+- name: Reload haproxy
+  become: true
+  ansible.builtin.systemd_service:
+    name: haproxy
+    state: reloaded

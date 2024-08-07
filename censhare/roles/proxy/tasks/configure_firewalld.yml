@@ -1,0 +1,30 @@
+---
+- name: "Install firewall package"
+  become: true
+  ansible.builtin.dnf:
+    name: python3-firewall
+    state: present
+
+- name: Open port 80 in the firewall
+  become: true
+  ansible.posix.firewalld:
+    port: 80/tcp
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Open port 443 in the firewall
+  become: true
+  ansible.posix.firewalld:
+    port: 443/tcp
+    permanent: true
+    state: enabled
+    immediate: true    
+
+- name: Open port 30546 in the firewall
+  become: true
+  ansible.posix.firewalld:
+    port: 30546/tcp
+    permanent: true
+    state: enabled
+    immediate: true    

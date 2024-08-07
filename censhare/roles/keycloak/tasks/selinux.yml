@@ -1,0 +1,14 @@
+---
+- name: Allow keycloak to bind to port 8080
+  become: true
+  community.general.seport:
+    ports: 8080
+    proto: tcp
+    setype: http_port_t
+- name: Open port 8080 in the firewall
+  become: true
+  ansible.posix.firewalld:
+    port: 8080/tcp
+    permanent: true
+    state: enabled
+    immediate: true

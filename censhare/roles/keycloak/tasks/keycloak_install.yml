@@ -1,0 +1,44 @@
+---
+- name: Ensure /opt/keycloak_themes directory exists
+  become: true
+  ansible.builtin.file:
+    path: /opt/keycloak_themes
+    state: directory
+    mode: '0755'
+- name: "Pull the Keycloak Docker image"
+  become: true
+  containers.podman.podman_image:
+    name: quay.io/keycloak/keycloak
+    tag: "{{ censhare_keycloak_version }}"
+    state: present
+- name: "Create Keycloak container using Podman"
+  become: true
+  containers.podman.podman_container:  
+    name: keycloak
+    image: "quay.io/keycloak/keycloak:{{ censhare_keycloak_version }}"
+    state: started
+    restart_policy: always
+    network: keycloak
+    ports:
+      - "8080:8080"
+    command: "start"
+    env:
+      KEYCLOAK_ADMIN: "{{ censhare_keycloak_admin_user }}"
+      KEYCLOAK_ADMIN_PASSWORD: "{{ censhare_keycloak_admin_pass }}"
+      KC_DB: postgres
+      KC_DB_URL: "jdbc:postgresql://{{ censhare_keycloak_db_host }}/{{ censhare_keycloak_db_name }}"
+      KC_DB_USERNAME: "{{ censhare_keycloak_db_user }}"
+      KC_DB_PASSWORD: "{{ censhare_keycloak_db_pass }}"
+      KC_HOSTNAME_URL: "{{ censhare_keycloak_hostname_url }}"
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: "/auth"
+      KC_PROXY_HEADERS: "xforwarded"
+    volumes:
+      - "/opt/keycloak_themes:/opt/keycloak/themes"
+- name: Wait for Keycloak to become available
+  wait_for:
+    host: "localhost"
+    port: 8080
+    delay: 10  # Wait 30 seconds before starting the checks
+    timeout: 300  # Timeout after 300 seconds
+    state: started

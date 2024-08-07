@@ -1,0 +1,24 @@
+---
+censhare_proxy_backends:
+  - name: localhost
+    address: localhost
+censhare_proxy_backends_keycloak: "{{ censhare_proxy_backends }}"
+censhare_proxy_backends_css: "{{ censhare_proxy_backends }}"
+censhare_proxy_backends_rmi: "{{ censhare_proxy_backends }}"
+censhare_proxy_backends_cgw: "{{ censhare_proxy_backends }}"
+censhare_proxy_keycloak_port: 8080
+censhare_proxy_cgw_port: 8082
+censhare_proxy_css_port: 9000
+censhare_proxy_rmi_port: 30546
+
+censhare_proxy_default_redirect: "censhare5/client"
+
+censhare_proxy_ssl: "self-signed"
+censhare_proxy_ssl_domain: "www.example.com"
+
+# censhare_proxy_redirect_kc_idp_hint:
+#   - name: foobar
+#     method: uri
+#     uri: "/foobar"
+#   - name: barfoo
+#     method: param

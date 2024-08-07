@@ -1,0 +1,79 @@
+---
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Gather ss output
+  ansible.builtin.command: "ss -tuln"
+  changed_when: false
+  register: ss_output
+
+- name: Verify censhare Core Cloud Gateway service is enabled and started
+  ansible.builtin.assert:
+    that:
+      - "'censhare.core-cloud-gateway.service' in ansible_facts.services"
+      - "ansible_facts.services['censhare.core-cloud-gateway.service'].state == 'running'"
+      - "ansible_facts.services['censhare.core-cloud-gateway.service'].status == 'enabled'"
+    fail_msg: "censhare.core-cloud-gateway.service is not enabled and started."
+
+- name: Verify censhare Static Resource Server service is enabled and started
+  ansible.builtin.assert:
+    that:
+      - "'censhare.static-resource-server.service' in ansible_facts.services"
+      - "ansible_facts.services['censhare.static-resource-server.service'].state == 'running'"
+      - "ansible_facts.services['censhare.static-resource-server.service'].status == 'enabled'"
+    fail_msg: "censhare.static-resource-server.service is not enabled and started."
+
+- name: Set fact for port 8082 listening status
+  ansible.builtin.set_fact:
+    port_8082_listening: "{{ 'LISTEN' in ss_output.stdout and ':8082' in ss_output.stdout }}"
+
+- name: Assert service is listening on port 8082
+  ansible.builtin.assert:
+    that:
+      - port_8082_listening
+    fail_msg: "Service is not listening on port 8082."
+
+- name: Set fact for port 8081 listening status
+  ansible.builtin.set_fact:
+    port_8081_listening: "{{ 'LISTEN' in ss_output.stdout and ':8081' in ss_output.stdout }}"
+
+- name: Assert service is listening on port 8081
+  ansible.builtin.assert:
+    that:
+      - port_8081_listening
+    fail_msg: "Service is not listening on port 8081."
+
+- name: Get the primary network interface IP address
+  ansible.builtin.set_fact:
+    primary_ip: "{{ ansible_default_ipv4.address }}"
+
+- name: Verify service is reachable on port 8082 from outside IP
+  ansible.builtin.uri:
+    url: "http://{{ primary_ip }}:8082"
+    method: GET
+    return_content: true
+    follow_redirects: none
+    status_code: 302
+  register: reachability_8082
+
+- name: Assert service is reachable on port 8082 from outside IP
+  ansible.builtin.assert:
+    that:
+      - reachability_8082.status == 302
+    fail_msg: "Service is not reachable on port 8082 from outside IP."
+
+- name: Verify service is reachable on port 8081 from outside IP
+  ansible.builtin.uri:
+    url: "http://{{ primary_ip }}:8081"
+    method: GET
+    return_content: true
+    follow_redirects: none
+    status_code: 200
+  register: reachability_8081
+
+- name: Assert service is reachable on port 8081 from outside IP
+  ansible.builtin.assert:
+    that:
+      - reachability_8081.status == 200
+      - reachability_8081.cookies_string == "CENSHARE_USER_LOGIN=============="
+    fail_msg: "Service is not reachable on port 8081 from outside IP."
