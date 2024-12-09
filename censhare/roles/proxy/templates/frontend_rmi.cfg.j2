@@ -1,6 +1,10 @@
 {{ ansible_managed | comment }}
 frontend rmi_front
+{% if censhare_proxy_ssl == "lets-encrypt" %}
+    bind :30546 ssl crt /etc/haproxy/certs/ strict-sni
+{% else %}
     bind *:30546 ssl crt {{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}.pem
+{% endif %}
     mode tcp
     option tcplog
     default_backend rmi_backend

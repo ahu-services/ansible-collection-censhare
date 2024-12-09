@@ -22,6 +22,10 @@ This Ansible role installs and configures HAProxy for use in a censhare environm
 - `censhare_proxy_ssl`: Which SSL service to use in the backend. Valid options: `self-signed`, `lets-encrypt`, or `commercial`. Default: `self-signed`.
 - `censhare_proxy_ssl_domain`: Domain used for SSL certificates.
 
+### Role Variables for use with lets encrypt
+
+- `censhare_proxy_ssl_acme_fingerprint`: The fingerprint from lets encrypt account.
+
 ## Dependencies
 
 There are no external role dependencies. However, this role requires several base packages to be present on the system, which are typically covered under the installation tasks within the role.

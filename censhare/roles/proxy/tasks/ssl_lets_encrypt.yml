@@ -1,93 +1,28 @@
 ---
----
-- hosts: localhost
-  become: yes
-  vars:
-    domain: "example.com"  # Set your domain here
-    email: "your-email@example.com"  # Set your email here
-    acme_directory: "https://acme-v02.api.letsencrypt.org/directory"
-    ssl_directory: "/etc/ssl/letsencrypt"
-    acme_account_key_path: "{{ ssl_directory }}/acme_account_key.pem"
-    haproxy_csr_path: "{{ ssl_directory }}/{{ domain }}.csr"
-    haproxy_cert_path: "{{ ssl_directory }}/{{ domain }}.pem"
-
-- name: Install Python Package Manager
-  become: true
-  ansible.builtin.dnf:
-    name: python-pip
+- name: Install dependencies for acme.sh
+  ansible.builtin.package:
+    name:
+      - curl
+      - socat
     state: present
 
-- name: Install Python cryptography package
-  become: true
-  ansible.builtin.pip:
-    name: cryptography
-    
-- name: Create directories for SSL
-  file:
-    path: "{{ item }}"
-    state: directory
-    mode: '0750'
-    owner: root
-    group: root
-  loop:
-    - "{{ ssl_directory }}"
+- name: Check if acme.sh is already installed
+  ansible.builtin.stat:
+    path: /root/.acme.sh/acme.sh
+  register: acme_sh_installed
 
-- name: Generate ACME account private key
-  community.crypto.openssl_privatekey:
-    path: "{{ acme_account_key_path }}"
-    size: 4096
-    mode: '0600'
-    owner: root
-    group: root
-    type: RSA
+- name: Install acme.sh
+  ansible.builtin.command:
+    cmd: "curl https://get.acme.sh | sh"
+  when: not acme_sh_installed.stat.exists
 
-- name: Register ACME account with Let's Encrypt
-  community.crypto.acme_account:
-    account_email: "{{ email }}"
-    acme_directory: "{{ acme_directory }}"
-    account_key_src: "{{ acme_account_key_path }}"
+- name: Ensure acme.sh is available in PATH
+  ansible.builtin.lineinfile:
+    path: /root/.bashrc
+    line: 'export PATH="$HOME/.acme.sh:$PATH"'
     state: present
-    terms_agreed: yes
 
-- name: Generate a private key for HAProxy
-  community.crypto.openssl_privatekey:
-    path: "{{ ssl_directory }}/{{ domain }}.key"
-    size: 4096
-    mode: '0600'
-    owner: root
-    group: root
-    type: RSA
-
-- name: Generate a CSR for HAProxy
-  community.crypto.openssl_csr:
-    path: "{{ haproxy_csr_path }}"
-    privatekey_path: "{{ ssl_directory }}/{{ domain }}.key"
-    common_name: "{{ domain }}"
-    mode: '0644'
-    owner: root
-    group: root
-
-- name: Generate Let's Encrypt certificate using HTTP-01 challenge
-  community.crypto.acme_certificate:
-    account_key_src: "{{ acme_account_key_path }}"
-    acme_directory: "{{ acme_directory }}"
-    csr: "{{ haproxy_csr_path }}"
-    dest: "{{ haproxy_cert_path }}"
-    challenge: http-01
-    http01_port: 80  # Ensure this port is available for the challenge
-    data: "{{ lookup('env', 'CERTBOT_TOKEN') }}"  # Used for challenge response
-
-- name: Combine certificate and private key
-  ansible.builtin.assemble:
-    src: "{{ ssl_directory }}"
-    dest: "{{ ssl_directory }}/{{ domain }}_combined.pem"
-    regexp: '.*\.(key|pem)$'
-    delimiter: '\n'
-    mode: '0600'
-    owner: root
-    group: root
-
-- name: Reload HAProxy to use the new certificate
-  ansible.builtin.systemd:
-    name: haproxy
-    state: reloaded
+- name: Reload bashrc to include acme.sh in PATH
+  ansible.builtin.shell:
+    cmd: "source /root/.bashrc"
+    executable: /bin/bash
