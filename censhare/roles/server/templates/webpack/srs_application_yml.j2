@@ -1,7 +1,6 @@
 {{ ansible_managed | comment }}
 ## Service port
 server.port: 8081
-spring.zipkin.enabled: false
 
 KEYCLOAK_DOMAIN: {{ censhare_keycloak_domain }}
 AUTHENTICATION_SERVER_BASE_URL: https://${KEYCLOAK_DOMAIN}
@@ -23,7 +22,7 @@ server:
 #logging.level.org.apache.http: INFO
 #logging.level.org.springframework.security: INFO
 
-##application server connect, please replace with URL to your censhare-Servert System
+##application server connect, please replace with URL to your censhare-Server System
 application.server.rest.url: http://localhost:9000/forward/rest/
 
 ##keycloak authentication url, please replace with URL to your keycloak authentication realm
@@ -32,3 +31,9 @@ spring.security.oauth2.resourceserver.jwt.jwk-set-uri: ${AUTHENTICATION_SERVER_B
 ##webpack path
 #webserver.content-dir: /opt/webpack
 #webserver.temp.folder: /tmp/upload
+
+# Uncomment this line, if Zipkin is NOT available (e.g. on test or local environments)
+spring.zipkin.enabled: false
+
+# Uncomment this if OpenTelemetry Collector in Jaeger is NOT available
+otel.sdk.disabled: true
