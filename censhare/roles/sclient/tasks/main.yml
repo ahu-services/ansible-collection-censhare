@@ -71,7 +71,7 @@
       SVC_HOST: '{{ censhare_sclient_svc_host }}'
       OFFICE_URL: 'http://collabora:9980/cool/convert-to/pdf'
 - name: "Create censhare-Service-Client container using Podman with volumes"
-  when: not censhare_sclient_direct_volumes
+  when: censhare_sclient_direct_volumes
   become: true
   containers.podman.podman_container:
     name: service-client
@@ -87,5 +87,5 @@
       SVC_PASS: '{{ censhare_sclient_svc_pass }}'
       SVC_HOST: '{{ censhare_sclient_svc_host }}'
       OFFICE_URL: 'http://collabora:9980/cool/convert-to/pdf'
-      VOLUMES_INFO: "{{ censhare_sclient_volumes_info }}"
+      VOLUMES_INFO: "{{ censhare_sclient_volumes_info | to_json }}"
     volume: "{{ censhare_sclient_volumes }}"

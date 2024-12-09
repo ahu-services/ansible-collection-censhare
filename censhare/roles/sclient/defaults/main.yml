@@ -11,9 +11,13 @@ censhare_sclient_collabora_version: latest
 censhare_sclient_direct_volumes: false
 censhare_sclient_volumes:
   - /assets:/assets/
-censhare_sclient_volumes_info: >
-  {
-    "assets": {"physicalurl": "file:///assets/", "filestreaming": false},
-    "assets-temp": {"physicalurl": "file:///assets/assets-temp/", "filestreaming": false},
-    "temp": {"physicalurl": "file:///assets/temp/", "filestreaming": false}
-  }
+censhare_sclient_volumes_info:
+  assets:
+    physicalurl: "file:///assets/"
+    filestreaming: "false"
+  assets-temp:
+    physicalurl: "file:///assets/assets-temp/"
+    filestreaming: "false"
+  temp:
+    physicalurl: "file:///assets/temp/"
+    filestreaming: "false"
