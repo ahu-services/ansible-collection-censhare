@@ -1,3 +1,7 @@
 {
-    "ansible.python.interpreterPath": "/Users/ahu/.local/share/virtualenvs/ahu_services-QgPesvY1/bin/python"
+    "ansible.python.interpreterPath": "/Users/ahu/.local/share/virtualenvs/ahu_services-QgPesvY1/bin/python",
+    "conventionalCommits.scopes": [
+        "sclient",
+        "server"
+    ]
 }

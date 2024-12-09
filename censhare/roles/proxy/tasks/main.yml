@@ -23,7 +23,7 @@
     firewalld_service_available: "{{ 'firewalld.service' in ansible_facts.services }}"
 
 - name: Check if firewalld is active
-  set_fact:
+  ansible.builtin.set_fact:
     firewalld_active: "{{ ansible_facts.services['firewalld.service'].state == 'running' }}"
   when: firewalld_service_available | default(false)
 
@@ -36,7 +36,7 @@
     filter: ansible_selinux
 
 - name: Check if SELinux is installed and enforcing
-  set_fact:
+  ansible.builtin.set_fact:
     selinux_installed: "{{ ansible_selinux.status != 'disabled' }}"
 
 - name: Include SELinux tasks if SELinux is installed and enforcing
@@ -47,9 +47,9 @@
   when: censhare_proxy_ssl == "self-signed"
   ansible.builtin.include_tasks: ssl_self_signed.yml
 
-- name: "SSL Setup | Lets Encrypt Certificate"
-  when: censhare_proxy_ssl == "lets-encrypt"
-  ansible.builtin.include_tasks: ssl_lets_encrypt.yml
+# - name: "SSL Setup | Lets Encrypt Certificate"
+#   when: censhare_proxy_ssl == "lets-encrypt"
+#   ansible.builtin.include_tasks: ssl_lets_encrypt.yml
 
 - name: "SSL Setup | Commercial Certificate"
   when: censhare_proxy_ssl == "commercial"
