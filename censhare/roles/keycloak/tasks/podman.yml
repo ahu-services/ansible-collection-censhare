@@ -1,11 +1,14 @@
 ---
-- name: "Install podman-docker"
+# tasks file for installing Podman
+
+- name: Install Podman
   become: true
   ansible.builtin.dnf:
-    name: podman-docker
-    state: "present"
-- name: "Create podman network for keycloak"
+    name: podman
+    state: present
+
+- name: Create Podman network for keycloak
   become: true
   containers.podman.podman_network:
     name: keycloak
-    state: present      
+    state: present

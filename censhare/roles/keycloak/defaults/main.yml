@@ -12,7 +12,7 @@ censhare_keycloak_db_user: keycloak
 censhare_keycloak_db_pass: keycloak
 censhare_keycloak_db_name: keycloak
 censhare_keycloak_domain: auth.example.com
-censhare_keycloak_hostname_url: "https://{{ censhare_keycloak_domain }}/auth"
+censhare_keycloak_hostname_url: https://{{ censhare_keycloak_domain }}/auth
 censhare_keycloak_realm: censhare
 censhare_keycloak_realm_roles:
   - create-client
@@ -42,8 +42,8 @@ censhare_keycloak_smtp_host: mail.example.com
 censhare_keycloak_smtp_user: ""
 censhare_keycloak_smtp_pass: ""
 censhare_keycloak_smtp_from: mailuser@example.com
-censhare_keycloak_smtp_from_display_name: "censhare Keycloak"
-censhare_keycloak_smtp_reply_to: "no-reply@example.com"
+censhare_keycloak_smtp_from_display_name: censhare Keycloak
+censhare_keycloak_smtp_reply_to: no-reply@example.com
 censhare_keycloak_smtp_port: "587"
 censhare_keycloak_smtp_starttls: "true"
 censhare_keycloak_smtp_ssl: "true"

@@ -1,5 +1,5 @@
 ---
-- name: "Create censhare realm"
+- name: Create censhare realm
   community.general.keycloak_realm:
     auth_client_id: admin-cli
     auth_keycloak_url: "{{ censhare_keycloak_hostname_url }}"
@@ -10,7 +10,7 @@
     realm: "{{ censhare_keycloak_realm }}"
     enabled: true
     display_name: "{{ censhare_keycloak_realm }}"
-    ssl_required: "external"
+    ssl_required: external
     registration_allowed: false
     login_with_email_allowed: false
     duplicate_emails_allowed: true
@@ -30,22 +30,22 @@
       from: "{{ censhare_keycloak_smtp_from }}"
       fromDisplayName: "{{ censhare_keycloak_smtp_from_display_name }}"
       replyTo: "{{ censhare_keycloak_smtp_reply_to }}"
-- name: "Create realm admin for censhare realm"
+- name: Create realm admin for censhare realm
   community.general.keycloak_user:
     auth_keycloak_url: "{{ censhare_keycloak_hostname_url }}"
     auth_username: "{{ censhare_keycloak_admin_user }}"
     auth_password: "{{ censhare_keycloak_admin_pass }}"
-    auth_realm: "master"
+    auth_realm: master
     username: "{{ censhare_keycloak_svc_user }}"
     realm: "{{ censhare_keycloak_realm }}"
     enabled: true
     validate_certs: false
     credentials:
-      - type: "password"
+      - type: password
         value: "{{ censhare_keycloak_svc_pass }}"
         temporary: false
     client_consents:
-      - client_id: "censhare5"
+      - client_id: censhare5
         roles: "{{ censhare_keycloak_realm_roles | join(',') }}"
     state: present
 - name: Create or update censhare5 client in keycloak
@@ -53,24 +53,24 @@
   community.general.keycloak_client:
     validate_certs: false
     auth_keycloak_url: "{{ censhare_keycloak_hostname_url }}"
-    auth_realm: "master"
+    auth_realm: master
     realm: "{{ censhare_keycloak_realm }}"
     auth_username: "{{ censhare_keycloak_admin_user }}"
     auth_password: "{{ censhare_keycloak_admin_pass }}"
-    client_id: "censhare5"
-    name: "censhare 5 OpenID client"
+    client_id: censhare5
+    name: censhare 5 OpenID client
     description: ""
-    root_url: "https://{{ censhare_keycloak_domain }}/"
+    root_url: https://{{ censhare_keycloak_domain }}/
     admin_url: ""
     base_url: ""
     surrogate_auth_required: false
     enabled: true
     always_display_in_console: false
-    client_authenticator_type: "client-secret"
+    client_authenticator_type: client-secret
     secret: "{{ censhare_keycloak_client_secret }}"
     redirect_uris:
-      - "https://{{ censhare_keycloak_domain }}/*"
-      - "http://{{ censhare_keycloak_domain }}/*"
+      - https://{{ censhare_keycloak_domain }}/*
+      - http://{{ censhare_keycloak_domain }}/*
     web_origins: ["*"]
     not_before: 0
     bearer_only: false
@@ -82,7 +82,7 @@
     authorization_services_enabled: true
     public_client: false
     frontchannel_logout: false
-    protocol: "openid-connect"
+    protocol: openid-connect
     attributes:
       oidc.ciba.grant.enabled: "false"
       backchannel.logout.session.required: "true"
@@ -91,70 +91,70 @@
     full_scope_allowed: true
     node_re_registration_timeout: -1
     protocol_mappers:
-      - name: "Client ID"
-        protocol: "openid-connect"
-        protocolMapper: "oidc-usersessionmodel-note-mapper"
+      - name: Client ID
+        protocol: openid-connect
+        protocolMapper: oidc-usersessionmodel-note-mapper
         consentRequired: false
         config:
-          user.session.note: "clientId"
+          user.session.note: clientId
           id.token.claim: "true"
           access.token.claim: "true"
-          claim.name: "clientId"
-          jsonType.label: "String"
-      - name: "Client Host"
-        protocol: "openid-connect"
-        protocolMapper: "oidc-usersessionmodel-note-mapper"
+          claim.name: clientId
+          jsonType.label: String
+      - name: Client Host
+        protocol: openid-connect
+        protocolMapper: oidc-usersessionmodel-note-mapper
         consentRequired: false
         config:
-          user.session.note: "clientHost"
+          user.session.note: clientHost
           id.token.claim: "true"
           access.token.claim: "true"
-          claim.name: "clientHost"
-          jsonType.label: "String"
-      - name: "Client IP Address"
-        protocol: "openid-connect"
-        protocolMapper: "oidc-usersessionmodel-note-mapper"
+          claim.name: clientHost
+          jsonType.label: String
+      - name: Client IP Address
+        protocol: openid-connect
+        protocolMapper: oidc-usersessionmodel-note-mapper
         consentRequired: false
         config:
-          user.session.note: "clientAddress"
+          user.session.note: clientAddress
           id.token.claim: "true"
           access.token.claim: "true"
-          claim.name: "clientAddress"
-          jsonType.label: "String"
+          claim.name: clientAddress
+          jsonType.label: String
     default_client_scopes:
-      - "web-origins"
-      - "acr"
-      - "profile"
-      - "roles"
-      - "email"
+      - web-origins
+      - acr
+      - profile
+      - roles
+      - email
     optional_client_scopes:
-      - "address"
-      - "phone"
-      - "offline_access"
-      - "microprofile-jwt"
+      - address
+      - phone
+      - offline_access
+      - microprofile-jwt
     state: present
 - name: Create or update desktop-app client in keycloak
   become: false
   community.general.keycloak_client:
     validate_certs: false
     auth_keycloak_url: "{{ censhare_keycloak_hostname_url }}"
-    auth_realm: "master"
+    auth_realm: master
     realm: "{{ censhare_keycloak_realm }}"
     auth_username: "{{ censhare_keycloak_admin_user }}"
     auth_password: "{{ censhare_keycloak_admin_pass }}"
-    client_id: "desktop-app"
-    name: "desktop-app"
+    client_id: desktop-app
+    name: desktop-app
     description: ""
-    root_url: "https://localhost:8082/"
+    root_url: https://localhost:8082/
     admin_url: ""
     base_url: ""
     surrogate_auth_required: false
     enabled: true
     always_display_in_console: false
-    client_authenticator_type: "client-secret"
+    client_authenticator_type: client-secret
     secret: "{{ censhare_keycloak_desktop_secret }}"
     redirect_uris:
-      - "http://localhost:*"
+      - http://localhost:*
     web_origins: ["*"]
     not_before: 0
     bearer_only: false
@@ -165,7 +165,7 @@
     service_accounts_enabled: false
     public_client: false
     frontchannel_logout: false
-    protocol: "openid-connect"
+    protocol: openid-connect
     attributes:
       saml.assertion.signature: "false"
       saml.force.post.binding: "false"
@@ -183,13 +183,13 @@
     full_scope_allowed: true
     node_re_registration_timeout: -1
     default_client_scopes:
-      - "web-origins"
-      - "profile"
-      - "roles"
-      - "email"
+      - web-origins
+      - profile
+      - roles
+      - email
     optional_client_scopes:
-      - "address"
-      - "phone"
-      - "offline_access"
-      - "microprofile-jwt"
+      - address
+      - phone
+      - offline_access
+      - microprofile-jwt
     state: present

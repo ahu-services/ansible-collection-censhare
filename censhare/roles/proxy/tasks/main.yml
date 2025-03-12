@@ -16,15 +16,15 @@
 
 - name: Check if firewalld is installed
   ansible.builtin.set_fact:
-    firewalld_installed: "{{ 'firewalld' in ansible_facts.packages }}"
+   firewalld_installed: "{{ 'firewalld' in ansible_facts.packages }}"
 
 - name: Check if firewalld service fact is available
   ansible.builtin.set_fact:
-    firewalld_service_available: "{{ 'firewalld.service' in ansible_facts.services }}"
+   firewalld_service_available: "{{ 'firewalld.service' in ansible_facts.services }}"
 
 - name: Check if firewalld is active
   ansible.builtin.set_fact:
-    firewalld_active: "{{ ansible_facts.services['firewalld.service'].state == 'running' }}"
+   firewalld_active: "{{ ansible_facts.services['firewalld.service'].state == 'running' }}"
   when: firewalld_service_available | default(false)
 
 - name: Include firewalld tasks if firewalld is installed and active
@@ -33,11 +33,11 @@
 
 - name: Gather SELinux facts
   ansible.builtin.setup:
-    filter: ansible_selinux
+   filter: ansible_selinux
 
 - name: Check if SELinux is installed and enforcing
   ansible.builtin.set_fact:
-    selinux_installed: "{{ ansible_selinux.status != 'disabled' }}"
+   selinux_installed: "{{ ansible_selinux.status != 'disabled' }}"
 
 - name: Include SELinux tasks if SELinux is installed and enforcing
   ansible.builtin.include_tasks: configure_selinux.yml
@@ -54,6 +54,15 @@
 - name: "SSL Setup | Commercial Certificate"
   when: censhare_proxy_ssl == "commercial"
   ansible.builtin.include_tasks: ssl_commercial.yml
+
+- name: "Create run dir"
+  become: true
+  ansible.builtin.file:
+    path: /var/run/haproxy
+    state: directory
+    mode: 0755
+    owner: haproxy
+    group: haproxy
 
 - name: "Configure HAProxy"
   become: true

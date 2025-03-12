@@ -14,8 +14,8 @@ backend censhare_server
     http-check expect rstring ^{\"status\":\"UP\"}$
     default-server inter 1s downinter 3s rise 15 fall 15
     timeout check 1s
-    timeout client 2h
-    timeout server 2h
+    timeout client {{ censhare_proxy_css_client_timeout }}
+    timeout server {{ censhare_proxy_css_server_timeout }}
 {% for backend in censhare_proxy_backends_css %}
     server {{ backend.name }} {{ backend.address }}:{{ censhare_proxy_css_port }} check
 {% endfor %}

@@ -1,40 +1,45 @@
 ---
-- name: "Setup Database for keycloak on delegated host"
-  delegate_to: "{{ censhare_keycloak_db_host}}"
+- name: Set db host delegation connection
+  when: censhare_keycloak_db_host_delegated is not defined
+  ansible.builtin.set_fact:
+    censhare_keycloak_db_host_delegated: "{{ censhare_keycloak_db_host }}"
+
+- name: Setup Database for keycloak on delegated host
+  delegate_to: "{{ censhare_keycloak_db_host_delegated }}"
   become: true
   block:
-  - name: Ensure PostgreSQL Python libraries are installed
-    ansible.builtin.package:
-      name: python3-psycopg2
-      state: present
+    - name: Ensure PostgreSQL Python libraries are installed
+      ansible.builtin.package:
+        name: python3-psycopg2
+        state: present
 
-  - name: Create PostgreSQL user for Keycloak
-    community.postgresql.postgresql_user:
-      db: postgres
-      name: "{{ censhare_keycloak_db_user }}"
-      password: "{{ censhare_keycloak_db_pass }}"
-      state: present
+    - name: Create PostgreSQL user for Keycloak
+      community.postgresql.postgresql_user:
+        db: postgres
+        name: "{{ censhare_keycloak_db_user }}"
+        password: "{{ censhare_keycloak_db_pass }}"
+        state: present
 
-  - name: Create PostgreSQL database for Keycloak
-    community.postgresql.postgresql_db:
-      name: "{{ censhare_keycloak_db_name }}"
-      owner: "{{ censhare_keycloak_db_user }}"
-      state: present
-      encoding: UTF8
-      lc_collate: 'en_US.UTF-8'
-      lc_ctype: 'en_US.UTF-8'
-      template: template0
+    - name: Create PostgreSQL database for Keycloak
+      community.postgresql.postgresql_db:
+        name: "{{ censhare_keycloak_db_name }}"
+        owner: "{{ censhare_keycloak_db_user }}"
+        state: present
+        encoding: UTF8
+        lc_collate: en_US.UTF-8
+        lc_ctype: en_US.UTF-8
+        template: template0
 
-  - name: Allow postgresql to bind to port 5432
-    become: true
-    community.general.seport:
-      ports: 5432
-      proto: tcp
-      setype: http_port_t
-  - name: Open port 5432 in the firewall
-    become: true
-    ansible.posix.firewalld:
-      port: 5432/tcp
-      permanent: true
-      state: enabled
-      immediate: true
+    - name: Allow postgresql to bind to port 5432
+      become: true
+      community.general.seport:
+        ports: 5432
+        proto: tcp
+        setype: http_port_t
+    - name: Open port 5432 in the firewall
+      become: true
+      ansible.posix.firewalld:
+        port: 5432/tcp
+        permanent: true
+        state: enabled
+        immediate: true
