@@ -21,8 +21,8 @@ backend censhare_cloud_gateway
     http-check expect status 200,302
     default-server inter 1s downinter 3s rise 15 fall 15
     timeout check 1s
-    timeout client 1h
-    timeout server 1h
+    timeout client {{ censhare_proxy_cgw_client_timeout }}
+    timeout server {{ censhare_proxy_cgw_server_timeout }}
     option tcpka
     
 {% for backend in censhare_proxy_backends_cgw %}
@@ -52,7 +52,8 @@ backend {{ backend.name }}
     http-check expect status 200,302
     default-server inter 1s downinter 3s rise 15 fall 15
     timeout check 1s
-    timeout server 1h
+    timeout client {{ censhare_proxy_cgw_client_timeout }}
+    timeout server {{ censhare_proxy_cgw_server_timeout }}
     option tcpka
 
     server {{ backend.name }} {{ backend.address }}:{{ censhare_proxy_cgw_port }} check

@@ -4,8 +4,8 @@ dependency:
 driver:
   name: docker
 platforms:
-  - name: "keycloak-${image:-al}-${tag:-9}"
-    image: "${namespace:-mullholland}/${image:-docker-almalinux-systemd}:${tag:-9}"
+  - name: keycloak-${image:-al}-${tag:-9}
+    image: ${namespace:-mullholland}/${image:-docker-almalinux-systemd}:${tag:-9}
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     cgroupns_mode: host
@@ -17,6 +17,6 @@ provisioner:
   inventory:
     group_vars:
       all:
-        censhare_keycloak_hostname_url: "http://localhost:8080/auth"
+        censhare_keycloak_hostname_url: http://localhost:8080/auth
 verifier:
   name: ansible
