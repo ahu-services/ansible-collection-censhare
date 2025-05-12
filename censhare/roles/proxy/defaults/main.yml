@@ -16,8 +16,6 @@ censhare_proxy_css_server_timeout: "2h"
 censhare_proxy_css_client_timeout: "2h"
 censhare_proxy_cgw_server_timeout: "1h"
 censhare_proxy_cgw_client_timeout: "1h"
-censhare_proxy_kc_server_timeout: "2h"
-censhare_proxy_kc_client_timeout: "2h"
 
 censhare_proxy_default_redirect: "censhare5/client"
 
