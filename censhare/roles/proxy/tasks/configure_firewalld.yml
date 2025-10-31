@@ -19,7 +19,7 @@
     port: 443/tcp
     permanent: true
     state: enabled
-    immediate: true    
+    immediate: true
 
 - name: Open port 30546 in the firewall
   become: true
@@ -27,4 +27,4 @@
     port: 30546/tcp
     permanent: true
     state: enabled
-    immediate: true    
+    immediate: true

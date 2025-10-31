@@ -1,5 +1,6 @@
 ---
 - name: Install dependencies for acme.sh
+  become: true
   ansible.builtin.package:
     name:
       - curl
@@ -7,22 +8,26 @@
     state: present
 
 - name: Check if acme.sh is already installed
+  become: true
   ansible.builtin.stat:
     path: /root/.acme.sh/acme.sh
   register: acme_sh_installed
 
 - name: Install acme.sh
+  become: true
   ansible.builtin.command:
     cmd: "curl https://get.acme.sh | sh"
   when: not acme_sh_installed.stat.exists
 
 - name: Ensure acme.sh is available in PATH
+  become: true
   ansible.builtin.lineinfile:
     path: /root/.bashrc
     line: 'export PATH="$HOME/.acme.sh:$PATH"'
     state: present
 
 - name: Reload bashrc to include acme.sh in PATH
+  become: true
   ansible.builtin.shell:
     cmd: "source /root/.bashrc"
     executable: /bin/bash

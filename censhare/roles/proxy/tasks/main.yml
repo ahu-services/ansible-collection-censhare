@@ -47,9 +47,9 @@
   when: censhare_proxy_ssl == "self-signed"
   ansible.builtin.include_tasks: ssl_self_signed.yml
 
-# - name: "SSL Setup | Lets Encrypt Certificate"
-#   when: censhare_proxy_ssl == "lets-encrypt"
-#   ansible.builtin.include_tasks: ssl_lets_encrypt.yml
+- name: "SSL Setup | Lets Encrypt Certificate"
+  when: censhare_proxy_ssl == "lets-encrypt"
+  ansible.builtin.include_tasks: ssl_lets_encrypt.yml
 
 - name: "SSL Setup | Commercial Certificate"
   when: censhare_proxy_ssl == "commercial"
@@ -58,20 +58,20 @@
 - name: "Create run dir"
   become: true
   ansible.builtin.file:
-    path: /var/run/haproxy
-    state: directory
-    mode: 0755
-    owner: haproxy
-    group: haproxy
+   path: /var/run/haproxy
+   state: directory
+   mode: 0755
+   owner: haproxy
+   group: haproxy
 
 - name: "Configure HAProxy"
   become: true
   ansible.builtin.template:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    mode: 0644
-    owner: root
-    group: root
+   src: "{{ item.src }}"
+   dest: "{{ item.dest }}"
+   mode: 0644
+   owner: root
+   group: root
   with_items:
     - { src: 'haproxy_main.cfg.j2', dest: '/etc/haproxy/haproxy.cfg' }
     - { src: 'frontend_http.cfg.j2', dest: '/etc/haproxy/conf.d/frontend_http.cfg' }

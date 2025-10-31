@@ -9,6 +9,7 @@ censhare_sclient_svc_pass: secret
 censhare_sclient_svc_host: censhare-hostname
 censhare_sclient_collabora_version: latest
 censhare_sclient_direct_volumes: false
+censhare_sclient_instances: 4
 censhare_sclient_volumes:
   - /assets:/assets/
 censhare_sclient_volumes_info:
