@@ -1,8 +1,12 @@
 ---
 - name: Determine TLS input source
   ansible.builtin.set_fact:
-    censhare_keycloak_tls_certificate_provided: "{{ (censhare_keycloak_tls_certificate_src | default('') | length > 0) or (censhare_keycloak_tls_certificate_content | default('') | length > 0) }}"
-    censhare_keycloak_tls_key_provided: "{{ (censhare_keycloak_tls_private_key_src | default('') | length > 0) or (censhare_keycloak_tls_private_key_content | default('') | length > 0) }}"
+    censhare_keycloak_tls_certificate_provided: >-
+      {{ (censhare_keycloak_tls_certificate_src | default('') | length > 0) or
+         (censhare_keycloak_tls_certificate_content | default('') | length > 0) }}
+    censhare_keycloak_tls_key_provided: >-
+      {{ (censhare_keycloak_tls_private_key_src | default('') | length > 0) or
+         (censhare_keycloak_tls_private_key_content | default('') | length > 0) }}
 
 - name: Validate TLS inputs
   ansible.builtin.assert:

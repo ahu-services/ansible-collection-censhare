@@ -28,7 +28,10 @@
 
 - name: Determine if SELinux is enforcing
   ansible.builtin.set_fact:
-    censhare_keycloak_selinux_enforcing: "{{ (ansible_selinux is defined) and (ansible_selinux.status == 'enabled') and (ansible_selinux.mode == 'enforcing') }}"
+    censhare_keycloak_selinux_enforcing: >-
+      {{ (ansible_selinux is defined)
+         and (ansible_selinux.status == 'enabled')
+         and (ansible_selinux.mode == 'enforcing') }}
 
 - name: "Create {{ censhare_keycloak_db_home_dir }}"
   become: true
