@@ -1,0 +1,98 @@
+---
+# tasks file for censhare_proxy
+- name: "Install HAProxy"
+  become: true
+  ansible.builtin.dnf:
+    name: haproxy
+    state: present
+
+- name: Gather package facts
+  ansible.builtin.package_facts:
+
+- name: Gather service facts
+  become: true
+  ansible.builtin.service_facts:
+  register: service_facts
+
+- name: Check if firewalld is installed
+  ansible.builtin.set_fact:
+    firewalld_installed: "{{ 'firewalld' in ansible_facts.packages }}"
+
+- name: Check if firewalld service fact is available
+  ansible.builtin.set_fact:
+    firewalld_service_available: "{{ 'firewalld.service' in ansible_facts.services }}"
+
+- name: Check if firewalld is active
+  ansible.builtin.set_fact:
+    firewalld_active: "{{ ansible_facts.services['firewalld.service'].state == 'running' }}"
+  when: firewalld_service_available | default(false)
+
+- name: Include firewalld tasks if firewalld is installed and active
+  ansible.builtin.include_tasks: configure_firewalld.yml
+  when: firewalld_installed and firewalld_active | default(false)
+
+- name: Gather SELinux facts
+  ansible.builtin.setup:
+    filter: ansible_selinux
+
+- name: Check if SELinux is installed and enforcing
+  ansible.builtin.set_fact:
+    selinux_installed: "{{ ansible_selinux.status != 'disabled' }}"
+
+- name: Include SELinux tasks if SELinux is installed and enforcing
+  ansible.builtin.include_tasks: configure_selinux.yml
+  when: selinux_installed
+
+- name: "SSL Setup | Self-signed Certificate"
+  when: censhare_proxy_ssl == "self-signed"
+  ansible.builtin.include_tasks: ssl_self_signed.yml
+
+- name: "SSL Setup | Lets Encrypt Certificate"
+  when: censhare_proxy_ssl == "lets-encrypt"
+  ansible.builtin.include_tasks: ssl_lets_encrypt.yml
+
+- name: "SSL Setup | Commercial Certificate"
+  when: censhare_proxy_ssl == "commercial"
+  ansible.builtin.include_tasks: ssl_commercial.yml
+
+- name: "Create run dir"
+  become: true
+  ansible.builtin.file:
+    path: /var/run/haproxy
+    state: directory
+    mode: '0755'
+    owner: haproxy
+    group: haproxy
+
+- name: "Configure HAProxy"
+  become: true
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0644'
+    owner: root
+    group: root
+  loop:
+    - src: 'haproxy_main.cfg.j2'
+      dest: '/etc/haproxy/haproxy.cfg'
+    - src: 'frontend_http.cfg.j2'
+      dest: '/etc/haproxy/conf.d/frontend_http.cfg'
+    - src: 'backend_keycloak.cfg.j2'
+      dest: '/etc/haproxy/conf.d/backend_keycloak.cfg'
+    - src: 'backend_cloud_gateway.cfg.j2'
+      dest: '/etc/haproxy/conf.d/backend_cloud_gateway.cfg'
+    - src: 'backend_censhare_server.cfg.j2'
+      dest: '/etc/haproxy/conf.d/backend_censhare_server.cfg'
+    - src: 'frontend_rmi.cfg.j2'
+      dest: '/etc/haproxy/conf.d/frontend_rmi.cfg'
+    - src: 'backend_rmi.cfg.j2'
+      dest: '/etc/haproxy/conf.d/backend_rmi.cfg'
+  notify:
+    - Reload haproxy
+
+- name: "Enable and start HAProxy"
+  become: true
+  ansible.builtin.systemd_service:
+    name: haproxy
+    state: started
+    enabled: true

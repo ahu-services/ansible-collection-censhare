@@ -1,0 +1,133 @@
+---
+# tasks file for installing Keycloak in container mode
+
+- name: Ensure /opt/keycloak_themes directory exists
+  become: true
+  ansible.builtin.file:
+    path: /opt/keycloak_themes
+    state: directory
+    mode: "0755"
+
+- name: Pull the Keycloak image (Podman)
+  when: container_engine == "podman"
+  become: true
+  containers.podman.podman_image:
+    name: quay.io/keycloak/keycloak
+    tag: "{{ censhare_keycloak_version }}"
+    state: present
+
+- name: Pull the Keycloak image (Docker)
+  when: container_engine == "docker"
+  become: true
+  community.docker.docker_image:
+    name: quay.io/keycloak/keycloak
+    tag: "{{ censhare_keycloak_version }}"
+    source: pull
+    state: present
+
+- name: Ensure at least one Keycloak listener is exposed
+  ansible.builtin.assert:
+    that:
+      - (censhare_keycloak_http_enabled | bool) or (censhare_keycloak_tls_enabled | bool)
+    fail_msg: "Enable HTTP or TLS exposure so Keycloak container has at least one listening port."
+
+- name: Initialise Keycloak publish ports
+  ansible.builtin.set_fact:
+    censhare_keycloak_publish_ports: []
+
+- name: Add HTTP publish port
+  when: censhare_keycloak_http_enabled
+  ansible.builtin.set_fact:
+    censhare_keycloak_publish_ports: "{{ censhare_keycloak_publish_ports + [censhare_keycloak_http_host_port | string ~ ':' ~ censhare_keycloak_http_container_port | string] }}"
+
+- name: Add HTTPS publish port
+  when: censhare_keycloak_tls_enabled
+  ansible.builtin.set_fact:
+    censhare_keycloak_publish_ports: "{{ censhare_keycloak_publish_ports + [censhare_keycloak_https_host_port | string ~ ':' ~ censhare_keycloak_https_container_port | string] }}"
+
+- name: Initialise Keycloak container volumes
+  ansible.builtin.set_fact:
+    censhare_keycloak_container_volumes:
+      - /opt/keycloak_themes:/opt/keycloak/themes
+
+- name: Add TLS keystore volume
+  when: censhare_keycloak_tls_enabled
+  ansible.builtin.set_fact:
+    censhare_keycloak_container_volumes: "{{ censhare_keycloak_container_volumes + [censhare_keycloak_tls_keystore_file ~ ':' ~ censhare_keycloak_tls_container_keystore_file ~ ':ro'] }}"
+
+- name: Determine service wait port
+  ansible.builtin.set_fact:
+    censhare_keycloak_wait_port: "{{ censhare_keycloak_http_host_port if censhare_keycloak_http_enabled else censhare_keycloak_https_host_port }}"
+
+- name: Build Keycloak environment variables
+  ansible.builtin.set_fact:
+    censhare_keycloak_container_env: "{{ keycloak_env_base | combine(keycloak_env_tls) }}"
+  vars:
+    keycloak_env_base:
+      KEYCLOAK_ADMIN: "{{ censhare_keycloak_admin_user }}"
+      KEYCLOAK_ADMIN_PASSWORD: "{{ censhare_keycloak_admin_pass }}"
+      KC_DB: postgres
+      KC_DB_URL: "jdbc:postgresql://{{ censhare_keycloak_db_host }}/{{ censhare_keycloak_db_name }}"
+      KC_DB_USERNAME: "{{ censhare_keycloak_db_user }}"
+      KC_DB_PASSWORD: "{{ censhare_keycloak_db_pass }}"
+      KC_HOSTNAME: "{{ censhare_keycloak_hostname_url }}"
+      KC_HTTP_ENABLED: "{{ 'true' if censhare_keycloak_http_enabled else 'false' }}"
+      KC_HTTP_RELATIVE_PATH: "{{ censhare_keycloak_http_relative_path }}"
+      KC_PROXY_HEADERS: "{{ censhare_keycloak_proxy_headers }}"
+    keycloak_env_tls: "{{ censhare_keycloak_tls_enabled | ternary({'KC_HTTPS_KEY_STORE_FILE': censhare_keycloak_tls_container_keystore_file, 'KC_HTTPS_KEY_STORE_PASSWORD': censhare_keycloak_tls_keystore_password}, {}) }}"
+
+- name: Create Keycloak quadlet using Podman
+  when: container_engine == "podman"
+  become: true
+  containers.podman.podman_container:
+    name: "{{ censhare_keycloak_container_name }}"
+    image: quay.io/keycloak/keycloak:{{ censhare_keycloak_version }}
+    state: quadlet
+    quadlet_dir: "{{ censhare_keycloak_quadlet_dir }}"
+    quadlet_filename: "{{ censhare_keycloak_container_name }}"
+    network: keycloak
+    publish: "{{ censhare_keycloak_publish_ports }}"
+    command: start
+    env: "{{ censhare_keycloak_container_env }}"
+    volumes: "{{ censhare_keycloak_container_volumes }}"
+    quadlet_options:
+      - |
+        [Install]
+        WantedBy={{ censhare_keycloak_quadlet_wanted_by }}
+      - |
+        [Service]
+        Restart=always
+        RestartSec=10
+  register: keycloak_quadlet_result
+
+- name: Ensure Keycloak quadlet service is enabled (Podman)
+  when: container_engine == "podman"
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ censhare_keycloak_service_unit }}"
+    enabled: true
+    state: "{{ 'restarted' if keycloak_quadlet_result.changed else 'started' }}"
+    daemon_reload: "{{ keycloak_quadlet_result.changed | default(false) | bool }}"
+
+- name: Create Keycloak container using Docker
+  when: container_engine == "docker"
+  become: true
+  community.docker.docker_container:
+    name: "{{ censhare_keycloak_container_name }}"
+    image: quay.io/keycloak/keycloak:{{ censhare_keycloak_version }}
+    state: started
+    restart_policy: always
+    networks:
+      - name: keycloak
+    published_ports: "{{ censhare_keycloak_publish_ports }}"
+    command: start
+    env: "{{ censhare_keycloak_container_env }}"
+    volumes: "{{ censhare_keycloak_container_volumes }}"
+
+- name: Wait for Keycloak to become available
+  ansible.builtin.wait_for:
+    host: localhost
+    port: "{{ censhare_keycloak_wait_port }}"
+    delay: 10 # Wait 10 seconds before starting the checks
+    timeout: 300 # Timeout after 300 seconds
+    state: started

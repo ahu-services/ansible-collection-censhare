@@ -1,0 +1,14 @@
+---
+- name: Restart collabora service unit
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ censhare_sclient_collabora_name }}"
+    state: restarted
+    daemon_reload: true
+
+- name: Restart service-client service unit
+  become: true
+  ansible.builtin.systemd:
+    name: "container-{{ censhare_sclient_svc_name }}"
+    state: restarted
+    daemon_reload: true

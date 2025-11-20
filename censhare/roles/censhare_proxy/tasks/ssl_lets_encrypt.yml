@@ -1,0 +1,29 @@
+---
+- name: Install dependencies for acme.sh
+  become: true
+  ansible.builtin.package:
+    name:
+      - curl
+      - socat
+    state: present
+
+- name: Check if acme.sh is already installed
+  become: true
+  ansible.builtin.stat:
+    path: /root/.acme.sh/acme.sh
+  register: acme_sh_installed
+
+- name: Install acme.sh # noqa command-instead-of-module
+  become: true
+  ansible.builtin.command:
+    cmd: "curl https://get.acme.sh | sh"
+    creates: /root/.acme.sh/acme.sh
+  when: not acme_sh_installed.stat.exists
+  changed_when: false
+
+- name: Ensure acme.sh is available in PATH
+  become: true
+  ansible.builtin.lineinfile:
+    path: /root/.bashrc
+    line: 'export PATH="$HOME/.acme.sh:$PATH"'
+    state: present

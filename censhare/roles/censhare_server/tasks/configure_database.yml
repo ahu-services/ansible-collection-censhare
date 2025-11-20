@@ -1,0 +1,47 @@
+---
+- name: "Configure Database | Create custom database directory"
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_server_services_path }}/database"
+    state: directory
+    mode: '0755'
+    owner: "corpus"
+    group: "corpus"
+- name: "Configure Database | Create custom database config"
+  delegate_to: "{{ censhare_server_master_server_delegate }}"
+  become: true
+  ansible.builtin.template:
+    src: "{{ censhare_server_majmin_version }}/services/database_xml.j2"
+    dest: "{{ censhare_server_services_path }}/database/config.{{ censhare_server_css_id }}.xml"
+    mode: '0644'
+    owner: "corpus"
+    group: "corpus"
+
+- name: "Configure Database | Install psycopg2"
+  when: censhare_server_css_id == 'master'
+  become: true
+  ansible.builtin.dnf:
+    name: "python3-psycopg2"
+    state: "present"
+
+- name: "Configure Database | Get DB connection status"
+  when: censhare_server_css_id == 'master'
+  become: true
+  ansible.builtin.command: "{{ censhare_server_bin }}/CheckJDBC.sh {{ censhare_server_css_id }}"
+  register: censhare_server_db_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: "Configure Database | Create tables if not exists"
+  become: true
+  when:
+    - censhare_server_css_id == "master"
+    - '"An error occured: org.postgresql.util.PSQLException: ERROR: relation \"party\" does not exist" in censhare_server_db_status.stdout_lines'
+  community.postgresql.postgresql_script:
+    login_host: "{{ censhare_server_db_host }}"
+    port: "{{ censhare_server_db_port }}"
+    db: "{{ censhare_server_db_name }}"
+    login_user: "{{ censhare_server_db_user }}"
+    login_password: "{{ censhare_server_db_pass }}"
+    path: "{{ censhare_server_create_schema_script }}"

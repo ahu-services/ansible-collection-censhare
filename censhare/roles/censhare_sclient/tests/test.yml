@@ -1,0 +1,9 @@
+---
+- name: Test censhare_sclient role
+  hosts: localhost
+  remote_user: root
+  gather_facts: false
+  tasks:
+    - name: Include role under test
+      ansible.builtin.include_role:
+        name: "{{ playbook_dir | dirname }}"

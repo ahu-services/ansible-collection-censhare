@@ -1,0 +1,37 @@
+---
+- name: Check if XML files are valid
+  ansible.builtin.command: xmllint --noout {{ item }}
+  register: xml_result
+  loop:
+    - /opt/corpus/cscs/app/config/launcher.master.xml
+    - /opt/corpus/cscs/app/config/server.master.xml
+    - /opt/corpus/cscs/app/services/keycloak/config.master.xml
+    - /opt/corpus/cscs/app/services/database/config.master.xml
+    - /opt/corpus/cscs/app/services/mail/config.xml
+  changed_when: false
+  failed_when: false
+
+- name: Assert that XML files are well-formed
+  ansible.builtin.assert:
+    that:
+      - item.rc == 0
+    fail_msg: "{{ item.item }} is not a well-formed XML file."
+  loop: "{{ xml_result.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: "Get DB connection status"
+  become: true
+  become_user: "corpus"
+  ansible.builtin.command: "/opt/corpus/bin/CheckJDBC.sh master"
+  register: censhare_server_db_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Assert DB setuped correctly
+  ansible.builtin.assert:
+    that:
+      - censhare_server_db_status.rc == 0
+      - "'SQL test successful. Found 0 parties.' in censhare_server_db_status.stdout_lines"
+    fail_msg: "CheckJDBC.sh failed"

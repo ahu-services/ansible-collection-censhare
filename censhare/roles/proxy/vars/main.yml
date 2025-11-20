@@ -1,3 +1,0 @@
----
-# vars file for censhare_proxy
-censhare_proxy_ssl_directory: /etc/ssl/certs

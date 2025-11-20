@@ -1,0 +1,109 @@
+---
+- name: Determine TLS input source
+  ansible.builtin.set_fact:
+    censhare_keycloak_tls_certificate_provided: "{{ (censhare_keycloak_tls_certificate_src | default('') | length > 0) or (censhare_keycloak_tls_certificate_content | default('') | length > 0) }}"
+    censhare_keycloak_tls_key_provided: "{{ (censhare_keycloak_tls_private_key_src | default('') | length > 0) or (censhare_keycloak_tls_private_key_content | default('') | length > 0) }}"
+
+- name: Validate TLS inputs
+  ansible.builtin.assert:
+    that:
+      - censhare_keycloak_tls_certificate_provided == censhare_keycloak_tls_key_provided
+    fail_msg: "Both TLS certificate and private key must be provided, or leave both empty to generate a self-signed pair."
+
+- name: Ensure TLS directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_keycloak_tls_dir }}"
+    state: directory
+    mode: "0750"
+
+- name: Copy provided TLS certificate (content)
+  when:
+    - censhare_keycloak_tls_certificate_content | default('') | length > 0
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ censhare_keycloak_tls_certificate_path }}"
+    content: "{{ censhare_keycloak_tls_certificate_content }}"
+    mode: "0644"
+
+- name: Copy provided TLS certificate (file)
+  when:
+    - censhare_keycloak_tls_certificate_content | default('') | length == 0
+    - censhare_keycloak_tls_certificate_src | default('') | length > 0
+  become: true
+  ansible.builtin.copy:
+    src: "{{ censhare_keycloak_tls_certificate_src }}"
+    dest: "{{ censhare_keycloak_tls_certificate_path }}"
+    mode: "0644"
+
+- name: Copy provided TLS private key (content)
+  when:
+    - censhare_keycloak_tls_private_key_content | default('') | length > 0
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ censhare_keycloak_tls_private_key_path }}"
+    content: "{{ censhare_keycloak_tls_private_key_content }}"
+    mode: "0600"
+
+- name: Copy provided TLS private key (file)
+  when:
+    - censhare_keycloak_tls_private_key_content | default('') | length == 0
+    - censhare_keycloak_tls_private_key_src | default('') | length > 0
+  become: true
+  ansible.builtin.copy:
+    src: "{{ censhare_keycloak_tls_private_key_src }}"
+    dest: "{{ censhare_keycloak_tls_private_key_path }}"
+    mode: "0600"
+
+- name: Generate private key for self-signed certificate
+  when:
+    - not censhare_keycloak_tls_certificate_provided
+    - not censhare_keycloak_tls_key_provided
+  become: true
+  community.crypto.openssl_privatekey:
+    path: "{{ censhare_keycloak_tls_private_key_path }}"
+    size: 4096
+    type: RSA
+    mode: "0600"
+
+- name: Generate CSR for self-signed certificate
+  when:
+    - not censhare_keycloak_tls_certificate_provided
+    - not censhare_keycloak_tls_key_provided
+  become: true
+  community.crypto.openssl_csr:
+    path: "{{ censhare_keycloak_tls_csr_path }}"
+    privatekey_path: "{{ censhare_keycloak_tls_private_key_path }}"
+    common_name: "{{ censhare_keycloak_domain }}"
+    subject_alt_name: "{{ censhare_keycloak_tls_self_signed_sans }}"
+    basic_constraints:
+      - "CA:FALSE"
+    key_usage:
+      - digitalSignature
+      - keyEncipherment
+    extended_key_usage:
+      - serverAuth
+
+- name: Generate self-signed TLS certificate
+  when:
+    - not censhare_keycloak_tls_certificate_provided
+    - not censhare_keycloak_tls_key_provided
+  become: true
+  community.crypto.x509_certificate:
+    path: "{{ censhare_keycloak_tls_certificate_path }}"
+    privatekey_path: "{{ censhare_keycloak_tls_private_key_path }}"
+    csr_path: "{{ censhare_keycloak_tls_csr_path }}"
+    provider: selfsigned
+    selfsigned_not_after: "+{{ censhare_keycloak_tls_self_signed_valid_days }}d"
+    mode: "0644"
+
+- name: Build PKCS12 keystore for Keycloak HTTPS
+  become: true
+  community.crypto.openssl_pkcs12:
+    action: export
+    path: "{{ censhare_keycloak_tls_keystore_file }}"
+    friendly_name: "{{ censhare_keycloak_container_name }}"
+    privatekey_path: "{{ censhare_keycloak_tls_private_key_path }}"
+    certificate_path: "{{ censhare_keycloak_tls_certificate_path }}"
+    passphrase: "{{ censhare_keycloak_tls_keystore_password }}"
+    mode: "0640"

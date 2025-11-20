@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+{{ ansible_managed | comment('xml') }}
+
+<remoteserver xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="remoteserver.xsd"
+    enabled="true"
+    max-invocations="-1"
+    watchdog-time-sec="60"
+    local-info-update-time="30"
+    remote-posting-threads-limit="5"
+    use-post-thread-pool="true"
+    post-thread-pool-size="10"
+    post-queue-size="10000"
+    xmlns:corpus="http://www.censhare.com/xml/3.0.0/corpus"
+    xmlns:new-val="http://www.censhare.com/xml/3.0.0/new-val"
+    xmlns:new-fct="http://www.censhare.com/xml/3.0.0/new-fct"
+>
+  <!-- comment node for admin client -->
+  <comment/>
+{% if censhare_server_css_id != "master" %}
+  <remote-server
+    name="master"
+    rmi-url="rmis://{{ censhare_server_master_server }}:30546/corpus.RMIServerSSL"
+    local-rmi-url="rmis://{{ ansible_default_ipv4.address }}:30546/corpus.RMIServerSSL"
+    key-alias="system@remote-server"
+    key-authentication="true"
+    local-user="system"
+    local-key-alias="system@remote-server"
+    user="system"
+    local-password="54b53072540eeeb8f8e9343e71f28176"
+    password="54b53072540eeeb8f8e9343e71f28176"
+    call-watch-timeout="10"
+    transfer-rate="0"
+    compression-level="0"
+    distance="10"
+    />
+{% endif %}
+</remoteserver>

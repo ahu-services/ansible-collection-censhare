@@ -1,0 +1,77 @@
+---
+# tasks file for censhare_server
+- name: Check repo login variables are set
+  ansible.builtin.fail:
+    msg: "You must define both 'censhare_server_repo_user' and 'censhare_server_repo_pass'."
+  when: censhare_server_repo_user == "" or censhare_server_repo_pass == ""
+  tags:
+    - css_install
+    - css_webpack_config
+
+- name: Gather package facts
+  ansible.builtin.package_facts:
+
+- name: Gather service facts
+  become: true
+  ansible.builtin.service_facts:
+  register: service_facts
+
+- name: Check if firewalld is installed
+  ansible.builtin.set_fact:
+    firewalld_installed: "{{ 'firewalld' in ansible_facts.packages }}"
+
+- name: Check if firewalld service fact is available
+  ansible.builtin.set_fact:
+    firewalld_service_available: "{{ 'firewalld.service' in ansible_facts.services }}"
+
+- name: Check if firewalld is active
+  ansible.builtin.set_fact:
+    firewalld_active: "{{ ansible_facts.services['firewalld.service'].state == 'running' }}"
+  when: firewalld_service_available | default(false)
+
+- name: Include firewalld tasks if firewalld is installed and active
+  ansible.builtin.include_tasks: configure_firewalld.yml
+  when: firewalld_installed and firewalld_active | default(false)
+
+- name: Gather SELinux facts
+  ansible.builtin.setup:
+    filter: ansible_selinux
+
+- name: Check if SELinux is installed and enforcing
+  ansible.builtin.set_fact:
+    selinux_installed: "{{ ansible_selinux.status != 'disabled' }}"
+
+- name: Include SELinux tasks if SELinux is installed and enforcing
+  ansible.builtin.include_tasks: configure_selinux.yml
+  when: selinux_installed
+
+- name: "Install censhare-Server software"
+  ansible.builtin.include_tasks: install_software.yml
+  tags:
+    - css_install
+
+- name: "Configure Server and Launcher"
+  ansible.builtin.include_tasks: configure_server.yml
+  tags:
+    - css_server_config
+
+- name: "Configure Database"
+  ansible.builtin.include_tasks: configure_database.yml
+  tags:
+    - css_database_config
+
+- name: "Configure censhare Services"
+  ansible.builtin.include_tasks: configure_services.yml
+  tags:
+    - css_services_config
+
+- name: "Configure Remote Service"
+  when: censhare_server_remote_server
+  ansible.builtin.include_tasks: configure_remote_services.yml
+  tags:
+    - css_server_config
+
+- name: "Configure Webpack components"
+  ansible.builtin.include_tasks: configure_webpack.yml
+  tags:
+    - css_webpack_config

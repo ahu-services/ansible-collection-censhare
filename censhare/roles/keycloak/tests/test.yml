@@ -1,6 +1,0 @@
----
-- name: Test playbook
-  hosts: localhost
-  remote_user: root
-  roles:
-    - ahu_services.censhare.keycloak

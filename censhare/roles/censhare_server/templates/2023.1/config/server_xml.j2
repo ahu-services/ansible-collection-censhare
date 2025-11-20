@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+{{ ansible_managed | comment('xml') }}
+<serverconfig
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="server.xsd">
+
+  <!--
+    CenShare Server configuration
+
+    - startuptimeout: is the time in [s] allowed for getting all managers
+      to running state, otherwise server will exit with error state.
+
+    Configuration for multi-server environments:
+    - database-server-name: censhare-Server name of server which has the best
+        connection to database. Used to determine on which side a command should
+        be executed.
+    - master-server-name: censhare-Server name of server which executes tasks
+        that can only be executed on one server, e.g. deletion commands
+        There should be only one master server!
+
+    NOTE: call-aquire-timeout-ms="10000" for debugging/testing only.
+    Reasonable would be 0,5-3s
+
+    Definition of realm:
+    Used for encrypted authorization requests (e.g. virtual filesystem / webdav)
+    to uniquely identify this server installation. For explaination of usage
+    and security aspects e.g. see RFC 2617.
+    -->
+
+    <xml-info
+      title="Server configuration"
+      description="&lt;html&gt;Global censhare Server configuration.&lt;br&gt;&lt;b&gt;Changes will take affect only after a server restart!&lt;/b&gt;&lt;/html&gt;"
+      version="1">
+      <property-resources>
+        <base url="file:module"/>
+        <base url="file:../common/global"/>
+      </property-resources>
+    </xml-info>
+
+
+    <admin-info dialog-id="config-server" dialog-url="file:config-dialog.xml"/>
+
+    <server-core
+        name="{{ censhare_server_css_id }}"
+
+        startup-timeout="600"
+        watchdog-interval="30"
+        recover-count="-1"
+
+        default-filesystem="temp"
+        default-connection="corpus"
+
+        locale="en"
+
+        session-cleaner-watchdog-interval="120"
+        session-timeout="3600"
+        execution-timeout="3600"
+        call-watch-timeout="10"
+        call-acquire-timeout-ms="300"
+        call-reschedule-timeout="120"
+        call-reschedule-timeout-on-startup="600"
+        max-hop-count="10"
+        dependences-watch-timeout="120"
+        finished-command-session-timeout="90"
+
+        master-server-name="master"
+
+        realm="corpus@censhare.de"
+
+        ignoreErrorsInConfigResolver="true"
+        >
+      <!-- The optional flag "ignoreErrorsInConfigResolver" decides, if errors should be ignored in some of the
+      refresh methods in ConfigResolver.
+      If set to "false", errors will prevent server startup!
+      By default this is true to avoid disrupting production use, but it should be set to false in development
+      and test systems. -->
+
+    <!-- These services must be available -->
+    <depends-on-service name="RMIConnectionService"/>
+    <depends-on-service name="EventService"/>
+    <depends-on-service name="CommandService"/>
+    <depends-on-service name="CommandExecutor"/>
+    <depends-on-service name="ScriptletService"/>
+    <depends-on-service name="FileFactoryService"/>
+    <depends-on-service name="CacheService"/>
+    <depends-on-service name="AssetManagementService"/>
+    <depends-on-service name="AssetStoreService"/>
+  </server-core>
+
+
+  <!-- FIXME MF: Test directories removed from ConfigScanner's exclude pattern ==> Test classes will come into release,too. Need special pattern for release build of server! -->
+  <!-- exclude-directory-regex=".*\.svn$|.*/\.rsrc$|.*\.save.*|.*/\.git$|.*/\.hg$|.*/test$" -->
+  <config-resolver
+      exclude-file-regex="^\..*|.*~|.*\.save.*"
+      exclude-directory-regex=".*\.svn$|.*/\.rsrc$|.*\.save.*|.*/\.git$|.*/\.hg$"
+      same-install-dir-as-master-server="false"
+      >
+    <locales default="{{ censhare_server_locale_default }}">
+    {% for locale in censhare_server_locales %}
+      <locale name="{{ locale }}"/>
+    {% endfor %}
+    </locales>
+  </config-resolver>
+
+
+  <!-- java system properties -->
+  <sysproperties>
+    <sysproperty key="java.awt.headless" value="true" enabled="true"/>
+    <sysproperty key="java.iccprofile.path" value="@current.runtime.dir@services/image/iccprofiles" enabled="true"/>
+    <sysproperty key="java.rmi.server.disableHttp" value="true" enabled="true"/>
+    <sysproperty key="java.rmi.server.hostname" value="censhare" enabled="false"/>
+    <sysproperty key="java.rmi.server.useLocalHostname" value="true" enabled="false"/>
+    <sysproperty key="java.rmi.server.codebase" value="file:@current.runtime.dir@common/lib/censhare-support.jar" enabled="true"/>
+    <sysproperty key="java.rmi.dgc.leaseValue" value="300000" enabled="true"/>
+    <sysproperty key="sun.rmi.dgc.server.gcInterval" value="3600000" enabled="true"/>
+    <sysproperty key="sun.rmi.dgc.client.gcInterval" value="3600000" enabled="true"/>
+    <sysproperty key="javax.net.ssl.keyStore" value="@current.runtime.dir@config/keystore" enabled="true"/>
+    <sysproperty key="javax.net.ssl.keyStorePassword" value="corpus" enabled="true"/>
+    <!-- Alias is used to select from many possible entries in the keystore for RMI Service, C5-29357 -->
+    <sysproperty key="censhare.rmi.keystoreAlias" value="{{ censhare_server_rmi_keystore_alias }}" enabled="true"/>
+    <sysproperty key="javax.net.ssl.trustStore" value="@current.runtime.dir@config/truststore" enabled="{{ censhare_server_custom_truststore }}"/>
+    <sysproperty key="javax.net.ssl.trustStorePassword" value="corpus" enabled="false"/>
+    <sysproperty key="java.security.egd" value="file:///dev/urandom" enabled="true"/>
+
+    <sysproperty key="java.net.preferIPv4Stack" value="true" enabled="false"/>
+    <sysproperty key="java.net.preferIPv6Addresses" value="true" enabled="false"/>
+
+    <!-- GSS-API / LDAP / Kerberos -->
+    <sysproperty key="java.security.krb5.conf" value="/etc/krb5.conf" enabled="true"/>
+    <sysproperty key="java.security.auth.login.config" value="@current.runtime.dir@config/jaas.conf" enabled="true"/>
+    <sysproperty key="javax.security.auth.useSubjectCredsOnly" value="false" enabled="true"/>
+    <sysproperty key="sun.security.krb5.debug" value="true" enabled="true"/>
+
+    <!-- Default to Xalan -->
+    <sysproperty key="javax.xml.transform.TransformerFactory" value="com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl" enabled="true"/>
+
+    <!-- Opentelemetry tracing configuration -->
+    <sysproperty key="com.censhare.tracing" value="opentelemetry" enabled="false"/>
+    <sysproperty key="otel.exporter.otlp.endpoint" value="http://localhost:4318" enabled="false"/>
+    <!-- Setup for opentelemetry observability https://github.com/open-telemetry/opentelemetry-java/tree/main/sdk-extensions/autoconfigure -->
+    <sysproperty key="otel.trace.exporter" value="otlp" enabled="true"/>
+    <sysproperty key="otel.metrics.exporter" value="none" enabled="true"/>
+    <sysproperty key="otel.logs.exporter" value="none" enabled="true"/>
+    <sysproperty key="otel.exporter.otlp.protocol" value="http/protobuf" enabled="true"/>
+    <sysproperty key="otel.propagators" value="b3multi" enabled="true"/>
+
+    <sysproperty key="sun.rmi.transport.logLevel" value="VERBOSE" enabled="false"/>
+    <sysproperty key="sun.rmi.transport.tcp.logLevel" value="VERBOSE" enabled="false"/>
+    <sysproperty key="javax.net.debug" value="ssl" enabled="false"/>
+
+    <sysproperty key="censhare.db-schema" value="file:@current.runtime.dir@config/db-schema.xml" enabled="true"/>
+
+    <!--  Enable the Java-transformation instead of XSLT one for Asset -->
+    <sysproperty key="censhare.asset.transformation.javaInsteadXslt.enabled"    value="false" enabled="true"/>
+
+    <!-- Enable flow of MassEditHandler with call to master server to perform checkout-checkin -->
+    <sysproperty key="censhare.massedit.use.master.api.enabled" value="true" enabled="true"/>
+    <!-- Sets the size of assets chunks to be sent from remote to master-->
+    <sysproperty key="censhare.massedit.chunk.size" value="100" enabled="true"/>
+
+    <!-- Activate processing for content diff application on master server instead of remote to minimise network latency. -->
+    <sysproperty key="censhare.contentDiffApplication.use.master.api.enabled" value="false" enabled="true"/>
+
+    <!-- Configuration needed for pdfbox 2.* to avoid non-optimal usage of color management -->
+    <sysproperty key="sun.java2d.cmm" value="sun.java2d.cmm.kcms.KcmsServiceProvider" enabled="true"/>
+
+    <!-- Skip ngrams with only numbers when load full text index -->
+    <sysproperty key="censhare.search.index.skip.numbers" value="false" enabled="true"/>
+
+    <!-- Enable the batching of incoming and outgoing events to process them aggregated and with delay -->
+    <sysproperty key="censhare.event.batching.enabled" value="true" enabled="true"/>
+
+    <!-- Concurrent CDB cache: improved cache eviction strategy -->
+    <sysproperty key="com.censhare.db.cdb.useBalancedEvictions" value="false" enabled="false"/>
+
+    <!-- Concurrent CDB cache: alternative cache implementation -->
+    <sysproperty key="com.censhare.db.cdb.useLRU2" value="false" enabled="false"/>
+
+    <!-- Concurrent CDB cache: separate cache access and root pin locks -->
+    <sysproperty key="com.censhare.db.cdb.usePinLock" value="false" enabled="false"/>
+
+    <!--
+         Optional system property to set the URL to access this server via censhare Web.
+         Currently only used to generate a password reset URL if a user resets the password
+         via censhare-Web. If this system property is set, host name, port and protocol of the URL are used
+         to construct the password reset URL. If the property is missing/disabled (the default),
+         the feature "Web Client URL" at the system asset is used instead for that purpose.
+         If that feature is also not present, the password reset is not possible and fails with an error.
+         The dummy "localhost.censhare.com" in the URL below must be replaced with the real host name.
+    -->
+    <sysproperty key="com.censhare.web.web-client-url" value="https://localhost.censhare.com:9443/censhare5/client/" enabled="false"/>
+
+    <!--
+         Optional system property to define the maximum time (in seconds) that a browser
+         is allowed to cache a result of a REST call (e.g. an asset preview or thumbnail).
+         This value is written into the max-age parameter of the Cache-Control response header:
+         Cache-Control: private, must-revalidate, max-age=1800
+         If the value is not defined as system property, a reasonable default is used, typically 30 minutes.
+    -->
+    <sysproperty key="com.censhare.rest.cache-control.max-age-seconds" value="1800" enabled="true"/>
+
+    <!-- Interval to refresh asset version count -->
+    <sysproperty key="com.censhare.serverstate.asset-version-count-refresh-interval" value="3600000" enabled="false"/>
+
+    <!-- Hybrid mode for ETS: delegate (default, AM service will delegate read and write calls), or read_only (AM service will delegate only write calls) -->
+    <sysproperty key="com.censhare.hybrid.mode" value="delegate" enabled="false"/>
+
+  </sysproperties>
+
+  <!-- configuration for service handling thread pool -->
+  <service-locator service-pool-size="80" scheduled-pool-size="10"/>
+
+  <!-- user accounting -->
+  <!-- TODO: Temporary set number of allowed logins to 1000 (for staging). Must be reverted prior going to production! -->
+  <user-accounting
+      allowed-invalid-logins="{{ censhare_server_allowed_invalid_logins }}"
+    >
+    <default-user
+        login="system"
+        password-digest="7368613235363adcab34ddf05128a80f974790834a8edb3a9a9cd489da742554cb4f3993dbc89b46af76e225e1698f67ad9c56047e4d608d"
+        role="admin"
+        domain="root."
+        domain2="root."
+        />
+    <!--
+      Note: Its allowed to set a negative value for temporary-password-expire-days or empty-password-expire-days.
+            This forces a user to change the password on first login.
+    -->
+    <password-rules expire-days="{{ censhare_server_password_expire_days }}"
+                    temporary-password-expire-days="7"
+                    empty-password-expire-days="1"
+                    temporary-password-length="10"
+                    text="Password does not meet the security guidelines: ">
+      <!--
+          Note:
+            - the regular expression must match the whole password string
+            - Use general text attribute for overall error message and description of rules.
+      -->
+      <password-rule regex=".{8,}"              text="Password is too short. It must consist of 8 or more characters."/>
+      <password-rule regex=".*\p{Upper}.*"      text="Password must contain at least one uppercase character."/>
+      <password-rule regex=".*\p{Lower}.*"      text="Password must contain at least one lowercase character."/>
+      <password-rule regex=".*\d.*"             text="Password must contain at least one digit."/>
+      <password-rule regex=".*\p{Punct}.*"      text="Password must contain at least one special character."/>
+      <!--password-rule regex=".*\d.*"        text="Password without digit"/-->
+      <!--password-rule regex=".*\p{Punct}.*" text="Password without punctuation"/-->
+      <!--password-rule regex="[^.]{0,20}"    text="Password too long"/-->
+    </password-rules>
+  </user-accounting>
+
+  <!-- setup logging for log files, console, ... -->
+  <logging reset="true">
+    <!-- root logger -->
+    <logger name="" level="INFO"/>
+    <!-- server main thread context logger -->
+    <logger name="com.censhare.server.kernel.CenShareServer" level="INFO"/>
+    <!-- command transaction context logger -->
+    <logger name="com.censhare.server.kernel.Command" level="INFO"/>
+
+    <!-- avoid logging of "java.net.SocketTimeoutException: Accept timed out" execptions with jdk6 -->
+    <logger name="sun.rmi.transport.tcp" level="OFF"/>
+
+    <!-- log external REST requests with level FINE or FINER -->
+    <logger name="com.censhare.server.webservice.AuthenticationFilter" level="FINE"/>
+
+    <logger name="org.apache.ftpserver" level="SEVERE"/>
+    <logger name="org.apache.ftpserver.listener.nio.FtpLoggingFilter" level="SEVERE"/>
+
+    <handler type="file" level="FINEST" file-limit="20000000" file-count="100" append="true"
+      filename-pattern="file:work/logs/server-%u.%g.log"
+      formatter="com.censhare.support.util.logging.SimpleFormatter">
+      <logger name=""/>
+    </handler>
+
+    <handler type="file" level="INFO" file-limit="10000000" file-count="10" append="true"
+      filename-pattern="file:work/logs/client-%u.%g.log"
+      formatter="com.censhare.support.util.logging.SimpleFormatter">
+      <logger name="censhare5.client" use-parent-handlers="false"/>
+    </handler>
+
+    <handler type="file" level="FINEST" file-limit="10000000" file-count="10" append="true"
+      filename-pattern="file:work/logs/ftpservice-%u.%g.log"
+      formatter="com.censhare.support.util.logging.SimpleFormatter">
+      <logger name="com.censhare.manager.ftpserver" use-parent-handlers="false"/>
+    </handler>
+
+    <!-- master data change log. This tracks changes done with the admin client.
+    <handler type="file" level="FINEST" file-limit="10000000" file-count="10" append="true"
+             filename-pattern="file:work/logs/masterdata-%u.%g.log"
+             formatter="com.censhare.support.util.logging.SimpleFormatter">
+      <logger name="com.censhare.server.support.util.MasterDataLogger" use-parent-handlers="false" level="FINE"/>
+    </handler>
+    -->
+
+    <!-- also possible to add several loggers inside one handler
+      <logger name="com.censhare.server.support.wsql.WConnection" level="FINER"/>
+      <handler type="file" level="FINER" file-limit="10000000" file-count="50" append="false"
+        filename-pattern="file:work/logs/sql-%u.%g.log"
+        formatter="com.censhare.support.util.logging.SimpleFormatter">
+        <logger name="com.censhare.server.support.wsql" level="FINER"/>
+      </handler>
+
+      <handler type="console"
+        level="INFO"
+        formatter="com.censhare.support.util.logging.SimpleFormatter">
+        <logger name=""/>
+      </handler>
+    -->
+
+    <!-- syslog sample, available since 2014-04-14, censhare 4.7.26, 4.8.7, 4.9.2 -->
+    <!-- handler@formatter defaults to "com.censhare.support.util.logging.SimpleFormatter" -->
+    <!-- handler@level defaults to "INFO" -->
+    <!-- handler@facility for a list of possible values see https://tools.ietf.org/html/rfc3164, default = 1 (user-level messages) -->
+    <!-- syslog port fixed to UDP/514 -->
+    <!--
+    <handler
+        type="custom"
+        level="ALL"
+        class="com.censhare.support.util.logging.SyslogHandler"
+        hostname="lxsrv.censhare.de"
+        facility="1"
+        >
+      <logger name=""/>
+    </handler>
+    -->
+
+    <!-- handler for logging to censhare monitoring infrastructure
+    <handler type="custom" class="com.censhare.server.logging.ConfigurableRemoteAppender" level="INFO" hostname="loghost2.censhare.com" port="9443"
+      keystore="file:work/runtime.master/config/keystore" keystore-password="corpus" keystore-alias="server"
+      queue-file="file:work/logs/queue.db">
+      <logger name="" />
+    </handler>
+    -->
+
+        <!--  context information will be available for every logmessage usefull for easier grouping/filtering in a remote logging scenario -->
+    <context>
+      <properties>
+        <property key="env" value="dev"/> <!-- should contain info about env type, e.g. "dev", "test", "qual", "prod" -->
+        <property key="customer" value="to-be-defined"/> <!-- should contain info about the customer, e.g. "censhare" -->
+      </properties>
+    </context>
+
+  </logging>
+
+</serverconfig>
