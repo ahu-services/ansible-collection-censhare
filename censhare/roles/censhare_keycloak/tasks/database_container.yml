@@ -1,0 +1,117 @@
+---
+# tasks file for configuring the database in container mode
+
+- name: Ensure runc is installed (Podman)
+  when: container_engine == "podman"
+  become: true
+  ansible.builtin.dnf:
+    name: runc
+    state: present
+
+- name: Create /etc/containers directory if it doesn't exist (Podman)
+  when: container_engine == "podman"
+  become: true
+  ansible.builtin.file:
+    path: /etc/containers
+    state: directory
+    mode: '0755'
+
+- name: Configure Podman to use runc as the default runtime (Podman)
+  when: container_engine == "podman"
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/containers/containers.conf
+    content: |
+      [engine]
+      runtime = "runc"
+    mode: '0644'
+
+- name: Determine if SELinux is enforcing
+  ansible.builtin.set_fact:
+    censhare_keycloak_selinux_enforcing: "{{ (ansible_selinux is defined) and (ansible_selinux.status == 'enabled') and (ansible_selinux.mode == 'enforcing') }}"
+
+- name: "Create {{ censhare_keycloak_db_data_dir }}"
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_keycloak_db_data_dir }}"
+    state: directory
+    owner: "{{ censhare_keycloak_db_uid }}"
+    group: "{{ censhare_keycloak_db_gid }}"
+    mode: "0700"
+
+- name: Persist SELinux context for PGDATA directory
+  when: censhare_keycloak_selinux_enforcing | default(false)
+  become: true
+  community.general.sefcontext:
+    target: "{{ censhare_keycloak_db_data_dir }}(/.*)?"
+    setype: container_file_t
+    state: present
+
+- name: Apply SELinux context to PGDATA directory
+  when: censhare_keycloak_selinux_enforcing | default(false)
+  become: true
+  ansible.builtin.command: "restorecon -Rv {{ censhare_keycloak_db_data_dir }}"
+
+- name: "Pull the PSQL image (Podman)"
+  when: container_engine == "podman"
+  become: true
+  containers.podman.podman_image:
+    name: docker.io/library/postgres
+    tag: "{{ censhare_keycloak_db_version }}-alpine"
+    state: present
+
+- name: "Pull the PSQL image (Docker)"
+  when: container_engine == "docker"
+  become: true
+  community.docker.docker_image:
+    name: postgres
+    tag: "{{ censhare_keycloak_db_version }}-alpine"
+    source: pull
+    state: present
+
+- name: "Create Postgres container using Podman"
+  when: container_engine == "podman"
+  become: true
+  containers.podman.podman_container:
+    name: postgres
+    image: "postgres:{{ censhare_keycloak_db_version }}-alpine"
+    state: started
+    restart_policy: always
+    network: keycloak
+    volumes:
+      - "{{ censhare_keycloak_db_data_dir }}:{{ censhare_keycloak_pgdata_path }}{{ ':Z' if censhare_keycloak_selinux_enforcing | default(false) else '' }}"
+    env:
+      POSTGRES_USER: "{{ censhare_keycloak_db_user }}"
+      POSTGRES_PASSWORD: "{{ censhare_keycloak_db_pass }}"
+      POSTGRES_DB: "{{ censhare_keycloak_db_name }}"
+      PGDATA: "{{ censhare_keycloak_pgdata_path }}"
+  register: keycloak_db_container_podman
+
+- name: "Create Postgres container using Docker"
+  when: container_engine == "docker"
+  become: true
+  community.docker.docker_container:
+    name: postgres
+    image: "postgres:{{ censhare_keycloak_db_version }}-alpine"
+    state: started
+    restart_policy: always
+    networks:
+      - name: keycloak
+    volumes:
+      - "{{ censhare_keycloak_db_data_dir }}:{{ censhare_keycloak_pgdata_path }}{{ ':Z' if censhare_keycloak_selinux_enforcing | default(false) else '' }}"
+    env:
+      POSTGRES_USER: "{{ censhare_keycloak_db_user }}"
+      POSTGRES_PASSWORD: "{{ censhare_keycloak_db_pass }}"
+      POSTGRES_DB: "{{ censhare_keycloak_db_name }}"
+      PGDATA: "{{ censhare_keycloak_pgdata_path }}"
+  register: keycloak_db_container_docker
+
+- name: "Set DB Host for Podman"
+  when: container_engine == "podman"
+  ansible.builtin.set_fact:
+    censhare_keycloak_db_host: "{{ keycloak_db_container_podman.container.attrs.NetworkSettings.Networks.keycloak.IPAddress }}"
+
+- name: "Set DB Host for Docker"
+  when: container_engine == "docker"
+  ansible.builtin.set_fact:
+    censhare_keycloak_db_host: "{{ keycloak_db_container_docker.container.NetworkSettings.Networks.keycloak.IPAddress }}"
