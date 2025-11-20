@@ -1,24 +1,27 @@
 ---
-- name: "Install podman-docker"
+- name: Install Podman helper packages
   become: true
   ansible.builtin.dnf:
-    name: podman-docker
-    state: "present"
-
-- name: Ensure runc is installed
-  become: true
-  ansible.builtin.dnf:
-    name: runc
+    name:
+      - podman-docker
+      - runc
     state: present
 
-- name: Create /etc/containers directory if it doesn't exist
+- name: Ensure /etc/containers exists
   become: true
   ansible.builtin.file:
     path: /etc/containers
     state: directory
     mode: '0755'
 
-- name: Create iccprofiles directory if it doesn't exist
+- name: Ensure quadlet directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_sclient_quadlet_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Ensure iccprofiles directory exists
   become: true
   ansible.builtin.file:
     path: "{{ censhare_sclient_iccprofiles_dir }}"
@@ -34,50 +37,133 @@
       runtime = "runc"
     mode: '0644'
 
-- name: "Create podman network for service-client"
+- name: Remove legacy systemd unit files
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "/etc/systemd/system/{{ censhare_sclient_collabora_name }}.service"
+    - "/etc/systemd/system/container-{{ censhare_sclient_svc_name }}.service"
+
+- name: Reload systemd after removing legacy units
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Detect SELinux enforcement
+  ansible.builtin.set_fact:
+    censhare_sclient_selinux_enforcing: "{{ (ansible_selinux is defined) and (ansible_selinux.status == 'enabled') and (ansible_selinux.mode == 'enforcing') }}"
+
+- name: Persist SELinux context for ICC profiles directory
+  when: censhare_sclient_selinux_enforcing | default(false)
+  become: true
+  community.general.sefcontext:
+    target: "{{ censhare_sclient_iccprofiles_dir }}(/.*)?"
+    setype: container_file_t
+    state: present
+
+- name: Apply SELinux context to ICC profiles directory
+  when: censhare_sclient_selinux_enforcing | default(false)
+  become: true
+  ansible.builtin.command: "restorecon -Rv {{ censhare_sclient_iccprofiles_dir }}"
+  register: censhare_sclient_restorecon
+  changed_when: censhare_sclient_restorecon.stdout is search('Relabeled')
+
+- name: Ensure podman network for service-client exists
   become: true
   containers.podman.podman_network:
     name: "{{ censhare_sclient_container_network }}"
     state: present
 
-- name: "Pull the cs-image-tools image"
+- name: Pull the cs-image-tools image
   become: true
   containers.podman.podman_image:
     name: "{{ censhare_sclient_tools_image }}"
     tag: "{{ censhare_sclient_tools_version }}"
     state: present
 
-- name: Generate systemd unit for collabora container
+- name: Pull the collabora image
   become: true
-  ansible.builtin.template:
-    src: container-collabora.service.j2
-    dest: "/etc/systemd/system/{{ censhare_sclient_collabora_name }}.service"
-    mode: '0644'
-  notify: Restart collabora service unit
+  containers.podman.podman_image:
+    name: "{{ censhare_sclient_collabora_image }}"
+    tag: "{{ censhare_sclient_collabora_version }}"
+    state: present
 
-- name: Generate systemd unit for service-client container
+- name: Configure collabora quadlet
   become: true
-  ansible.builtin.template:
-    src: container-service-client.service.j2
-    dest: "/etc/systemd/system/container-{{ censhare_sclient_svc_name }}.service"
-    mode: '0644'
-  notify: Restart service-client service unit
+  containers.podman.podman_container:
+    name: "{{ censhare_sclient_collabora_name }}"
+    image: "{{ censhare_sclient_collabora_image }}:{{ censhare_sclient_collabora_version }}"
+    state: quadlet
+    quadlet_dir: "{{ censhare_sclient_quadlet_dir }}"
+    quadlet_filename: "{{ censhare_sclient_collabora_name }}"
+    network: "{{ censhare_sclient_container_network }}"
+    publish:
+      - "127.0.0.1:9980:9980"
+    env:
+      extra_params: "{{ censhare_sclient_collabora_extra_params }}"
+    quadlet_options:
+      - |
+        [Install]
+        WantedBy={{ censhare_sclient_quadlet_wanted_by }}
+      - |
+        [Unit]
+        After=network-online.target
+      - |
+        [Service]
+        Restart=always
+        RestartSec=5
+        TimeoutStopSec=70
+  notify: Restart collabora quadlet
 
-- name: Reload systemd daemon
+- name: Ensure collabora quadlet service is enabled
   become: true
   ansible.builtin.systemd:
+    name: "{{ censhare_sclient_collabora_service_unit }}"
+    enabled: true
+    state: started
     daemon_reload: true
 
-- name: Enable and start collabora service unit
+- name: Configure service-client quadlet
   become: true
-  ansible.builtin.systemd:
-    name: "{{ censhare_sclient_collabora_name }}"
-    enabled: true
-    state: started
+  containers.podman.podman_container:
+    name: "{{ censhare_sclient_svc_name }}"
+    image: "{{ censhare_sclient_tools_image }}:{{ censhare_sclient_tools_version }}"
+    state: quadlet
+    quadlet_dir: "{{ censhare_sclient_quadlet_dir }}"
+    quadlet_filename: "{{ censhare_sclient_svc_name }}"
+    network: host
+    env:
+      REPO_USER: "{{ censhare_sclient_repo_user }}"
+      REPO_PASS: "{{ censhare_sclient_repo_pass }}"
+      VERSION: "{{ censhare_sclient_censhare_version }}"
+      SVC_USER: "{{ censhare_sclient_svc_user }}"
+      SVC_INSTANCES: "{{ censhare_sclient_instances | string }}"
+      SVC_PASS: "{{ censhare_sclient_svc_pass }}"
+      SVC_HOST: "{{ censhare_sclient_svc_host }}"
+      OFFICE_URL: "{{ censhare_sclient_office_url }}"
+      FFMPEG_TIMEOUT: "1800"
+    volumes:
+      - "{{ censhare_sclient_iccprofiles_dir }}:/iccprofiles{{ ':Z' if censhare_sclient_selinux_enforcing | default(false) else '' }}"
+    quadlet_options:
+      - |
+        [Install]
+        WantedBy={{ censhare_sclient_quadlet_wanted_by }}
+      - |
+        [Unit]
+        After={{ censhare_sclient_collabora_service_unit }} network-online.target
+      - |
+        [Service]
+        Restart=always
+        RestartSec=5
+        TimeoutStopSec=70
+  notify: Restart service-client quadlet
 
-- name: Enable and start service-client service unit
+- name: Ensure service-client quadlet service is enabled
   become: true
   ansible.builtin.systemd:
-    name: "container-{{ censhare_sclient_svc_name }}"
+    name: "{{ censhare_sclient_service_unit }}"
     enabled: true
     state: started
+    daemon_reload: true

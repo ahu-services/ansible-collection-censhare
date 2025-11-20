@@ -101,7 +101,7 @@
         [Service]
         Restart=always
         RestartSec=5
-  register: keycloak_db_quadlet
+  notify: Restart keycloak database quadlet
 
 - name: "Ensure Postgres quadlet service is enabled (Podman)"
   when: container_engine == "podman"
@@ -109,8 +109,7 @@
   ansible.builtin.systemd:
     name: "{{ censhare_keycloak_db_service_unit }}"
     enabled: true
-    state: "{{ 'restarted' if keycloak_db_quadlet.changed else 'started' }}"
-    daemon_reload: "{{ keycloak_db_quadlet.changed | default(false) | bool }}"
+    state: started
 
 - name: "Wait for Postgres quadlet container to be running"
   when: container_engine == "podman"

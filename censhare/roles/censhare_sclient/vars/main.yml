@@ -1,2 +1,4 @@
----
+--- 
 # vars file for ahu_services.censhare.censhare_sclient
+censhare_sclient_quadlet_dir: /etc/containers/systemd
+censhare_sclient_quadlet_wanted_by: multi-user.target

@@ -76,6 +76,11 @@
       KC_PROXY_HEADERS: "{{ censhare_keycloak_proxy_headers }}"
     keycloak_env_tls: "{{ censhare_keycloak_tls_enabled | ternary({'KC_HTTPS_KEY_STORE_FILE': censhare_keycloak_tls_container_keystore_file, 'KC_HTTPS_KEY_STORE_PASSWORD': censhare_keycloak_tls_keystore_password}, {}) }}"
 
+- name: Determine Keycloak quadlet dependency targets
+  when: container_engine == "podman"
+  ansible.builtin.set_fact:
+    censhare_keycloak_quadlet_after: "{{ (['network-online.target'] + ((censhare_keycloak_db_mode == 'container') | ternary([censhare_keycloak_db_service_unit], []))) | join(' ') }}"
+
 - name: Create Keycloak quadlet using Podman
   when: container_engine == "podman"
   become: true
@@ -94,6 +99,9 @@
       - |
         [Install]
         WantedBy={{ censhare_keycloak_quadlet_wanted_by }}
+      - |
+        [Unit]
+        After={{ censhare_keycloak_quadlet_after }}
       - |
         [Service]
         Restart=always

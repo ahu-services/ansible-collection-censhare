@@ -1,7 +1,7 @@
 # censhare Service Client Ansible Role
 
 This role provisions the censhare Service Client stack on Red Hat compatible hosts.
-It installs Podman, pulls the required container images, and generates systemd units for both the Collabora CODE sidecar and the service-client container so they start automatically on boot.
+It installs Podman, pulls the required container images, and wires the Collabora CODE sidecar plus the service-client container into Podman Quadlets so systemd manages them natively.
 
 ## Requirements
 
@@ -20,12 +20,15 @@ It installs Podman, pulls the required container images, and generates systemd u
 | `censhare_sclient_collabora_version` | `latest` | Tag for the Collabora CODE image (default `collabora/code`). |
 | `censhare_sclient_collabora_image` | `collabora/code` | Image repository to use for Collabora. |
 | `censhare_sclient_collabora_extra_params` | `--o:ssl.enable=false` | Additional arguments passed through the `extra_params` environment variable to Collabora. |
-| `censhare_sclient_container_network` | `censhare` | Podman network created for the containers. |
+| `censhare_sclient_container_network` | `censhare` | Podman network created for both containers (allows service-client to reach Collabora via container name). |
 | `censhare_sclient_svc_user` / `censhare_sclient_svc_pass` | `service-client` / `secret` | Service credentials provided to the container. |
 | `censhare_sclient_svc_host` | `censhare-hostname` | Default backend host name the container connects to. |
+| `censhare_sclient_office_url` | `http://localhost:9980/cool/convert-to/pdf` | URL the service-client uses for the Collabora conversion endpoint (exposed from the Collabora quadlet onto localhost). |
 | `censhare_sclient_instances` | `4` | Number of service-client instances to launch inside the container. |
 | `censhare_sclient_volumes` | `['/assets:/assets/']` | List of volume mappings in `HOST:CONTAINER` format. |
 | `censhare_sclient_volumes_info` | see defaults | Metadata injected into the service configuration. |
+
+The Collabora quadlet is ordered before the service-client quadlet (via `After=`) so podman starts it first, but there is no hard dependency – if Collabora fails, service-client will still come up.
 
 See `defaults/main.yml` for the full set of tunable parameters.
 

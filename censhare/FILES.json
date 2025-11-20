@@ -1219,13 +1219,6 @@
    "format": 1
   },
   {
-   "name": "roles/censhare_sclient/templates",
-   "ftype": "dir",
-   "chksum_type": null,
-   "chksum_sha256": null,
-   "format": 1
-  },
-  {
    "name": "roles/censhare_sclient/molecule",
    "ftype": "dir",
    "chksum_type": null,
@@ -1272,13 +1265,6 @@
    "ftype": "dir",
    "chksum_type": null,
    "chksum_sha256": null,
-   "format": 1
-  },
-  {
-   "name": "roles/censhare_sclient/handlers/main.yml",
-   "ftype": "file",
-   "chksum_type": "sha256",
-   "chksum_sha256": "dcdcc2b0fbb24315e4104dddf4544ba5171f9bed0e26e4d0789336c6073309ba",
    "format": 1
   },
   {

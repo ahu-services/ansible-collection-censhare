@@ -16,6 +16,9 @@ censhare_sclient_direct_volumes: false
 censhare_sclient_instances: 4
 censhare_sclient_svc_name: service-client
 censhare_sclient_collabora_name: collabora
+censhare_sclient_office_url: "http://localhost:9980/cool/convert-to/pdf"
+censhare_sclient_service_unit: "{{ censhare_sclient_svc_name }}.service"
+censhare_sclient_collabora_service_unit: "{{ censhare_sclient_collabora_name }}.service"
 censhare_sclient_iccprofiles_dir: /opt/iccprofiles
 censhare_sclient_volumes:
   - /assets:/assets/

@@ -24,8 +24,6 @@ censhare_keycloak_client_redirect_uris: "{{ censhare_keycloak_client_redirect_ur
 censhare_keycloak_pgdata_path: /var/lib/postgresql/data
 censhare_keycloak_container_name: keycloak
 censhare_keycloak_db_container_name: postgres
-censhare_keycloak_quadlet_dir: /etc/containers/systemd
-censhare_keycloak_quadlet_wanted_by: multi-user.target
 censhare_keycloak_service_unit: "{{ censhare_keycloak_container_name }}.service"
 censhare_keycloak_db_service_unit: "{{ censhare_keycloak_db_container_name }}.service"
 censhare_keycloak_http_enabled: true
