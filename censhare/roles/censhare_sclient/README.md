@@ -1,38 +1,53 @@
 # censhare Service Client Ansible Role
 
-This role provisions the censhare Service Client stack on Red Hat compatible hosts.
-It installs Podman, pulls the required container images, and wires the Collabora CODE sidecar plus the service-client container into Podman Quadlets so systemd manages them natively.
+This role provisions the censhare Service Client stack on Red Hat compatible hosts. It installs Podman, pulls the censhare Service Client and Collabora CODE images, and wires both into Podman Quadlets so systemd manages them natively.
+
+## What the role does
+
+- Installs Podman helper packages (`podman-docker`, `runc`) and enforces `runc` as the default runtime via `/etc/containers/containers.conf`.
+- Creates the Quadlet directory (`/etc/containers/systemd` by default) and a Podman network for the Collabora sidecar.
+- Pulls the `cs-image-tools` (service-client) and `collabora/code` images with configurable tags.
+- Creates and enables two Quadlet units: `collabora` publishes `127.0.0.1:9980` and the service-client runs on the host network with an `After=` dependency on Collabora.
+- Sets SELinux context for the ICC profiles directory when enforcement is enabled and keeps both Quadlets restarted by systemd.
 
 ## Requirements
 
-- Ansible 2.14 or newer.
-- Target hosts running an EL8/EL9 compatible distribution with systemd.
-- Podman packages available from the platform repositories (the role installs them automatically).
-- Credentials for the censhare repositories if you intend to pull protected images.
+- Ansible 2.14 or newer (matches the collection metadata).
+- EL8/EL9 compatible hosts with systemd.
+- A user with privileges to install packages, manage systemd units, and create Podman networks/containers.
+- Credentials for censhare registries if you pull protected images.
 
-## Role Variables
+## Role variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `censhare_sclient_repo_user` / `censhare_sclient_repo_pass` | `rpm_repo_user` / `rpm_repo_pass` | Credentials that are injected into the service-client container as environment variables. |
-| `censhare_sclient_censhare_version` | `2023.1.2` | Version string passed to the service-client container. |
-| `censhare_sclient_tools_version` | `latest` | Tag to use when pulling `ahuservices/cs-image-tools`. |
-| `censhare_sclient_collabora_version` | `latest` | Tag for the Collabora CODE image (default `collabora/code`). |
-| `censhare_sclient_collabora_image` | `collabora/code` | Image repository to use for Collabora. |
-| `censhare_sclient_collabora_extra_params` | `--o:ssl.enable=false` | Additional arguments passed through the `extra_params` environment variable to Collabora. |
-| `censhare_sclient_container_network` | `censhare` | Podman network created for both containers (allows service-client to reach Collabora via container name). |
-| `censhare_sclient_svc_user` / `censhare_sclient_svc_pass` | `service-client` / `secret` | Service credentials provided to the container. |
-| `censhare_sclient_svc_host` | `censhare-hostname` | Default backend host name the container connects to. |
-| `censhare_sclient_office_url` | `http://localhost:9980/cool/convert-to/pdf` | URL the service-client uses for the Collabora conversion endpoint (exposed from the Collabora quadlet onto localhost). |
-| `censhare_sclient_instances` | `4` | Number of service-client instances to launch inside the container. |
-| `censhare_sclient_volumes` | `['/assets:/assets/']` | List of volume mappings in `HOST:CONTAINER` format. |
-| `censhare_sclient_volumes_info` | see defaults | Metadata injected into the service configuration. |
+Container images and versions:
+- `censhare_sclient_tools_image` (default `docker.io/ahuservices/cs-image-tools`)
+- `censhare_sclient_tools_version` (default `latest`)
+- `censhare_sclient_collabora_image` (default `docker.io/collabora/code`)
+- `censhare_sclient_collabora_version` (default `latest`)
+- `censhare_sclient_collabora_extra_params` (default `--o:ssl.enable=false`) forwarded to Collabora as `extra_params`
 
-The Collabora quadlet is ordered before the service-client quadlet (via `After=`) so podman starts it first, but there is no hard dependency – if Collabora fails, service-client will still come up.
+Service Client configuration:
+- `censhare_sclient_repo_user` / `censhare_sclient_repo_pass` (default `rpm_repo_user` / `rpm_repo_pass`)
+- `censhare_sclient_censhare_version` (default `2023.1.2`)
+- `censhare_sclient_svc_user` / `censhare_sclient_svc_pass` (default `service-client` / `secret`)
+- `censhare_sclient_svc_host` (default `censhare-hostname`)
+- `censhare_sclient_office_url` (default `http://localhost:9980/cool/convert-to/pdf`)
+- `censhare_sclient_instances` (default `4`)
+- `censhare_sclient_svc_name` / `censhare_sclient_collabora_name` (Quadlet names; defaults `service-client` / `collabora`)
 
-See `defaults/main.yml` for the full set of tunable parameters.
+Host integration:
+- `censhare_sclient_quadlet_dir` (default `/etc/containers/systemd`)
+- `censhare_sclient_quadlet_wanted_by` (default `multi-user.target`)
+- `censhare_sclient_service_unit` / `censhare_sclient_collabora_service_unit` (systemd unit names; default `{{ name }}.service`)
+- `censhare_sclient_container_network` (default `censhare`) used for Collabora
+- `censhare_sclient_iccprofiles_dir` (default `/opt/iccprofiles`) mounted read-only into the service-client container
+- `censhare_sclient_volumes` and `censhare_sclient_volumes_info` (see `defaults/main.yml`) are provided for downstream consumers of the image metadata
 
-## Example Playbook
+The Collabora Quadlet is ordered before the service-client Quadlet (`After=`) so Podman starts it first. If Collabora fails to start, the service-client still comes up but its conversion endpoint will be unavailable until Collabora is healthy.
+
+See `roles/censhare_sclient/defaults/main.yml` for the full set of tunables.
+
+## Example playbook
 
 ```yaml
 - name: Deploy censhare service-client
@@ -44,8 +59,15 @@ See `defaults/main.yml` for the full set of tunable parameters.
     censhare_sclient_svc_host: "censhare-app.internal"
     censhare_sclient_instances: 8
     censhare_sclient_collabora_version: "23.05"
+    censhare_sclient_iccprofiles_dir: "/srv/iccprofiles"
   roles:
     - ahu_services.censhare.censhare_sclient
+```
+
+Quick check locally:
+
+```bash
+ansible-playbook -i roles/censhare_sclient/tests/inventory roles/censhare_sclient/tests/test.yml --check
 ```
 
 ## License

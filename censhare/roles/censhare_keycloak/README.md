@@ -4,8 +4,8 @@ This Ansible role installs and configures Keycloak as the authentication service
 
 ## Requirements
 
-- Ansible 2.1 or higher.
-- Target hosts should be running a compatible Linux distribution with Podman and the required images available.
+- Ansible 2.16 or higher (matches the collection `requires_ansible` setting).
+- Target hosts should be running a compatible Linux distribution with Podman available. The role relies on Podman Quadlets (`state: quadlet`) when Keycloak or its bundled Postgres DB runs in containers.
 
 ## Role Variables
 
@@ -16,7 +16,7 @@ This Ansible role installs and configures Keycloak as the authentication service
 
 ### Database Configuration
 
-- `censhare_keycloak_db_mode`: Specifies whether the database is in a container or hosted externally. Options: `container`, `hosted`. Default: `container`.
+- `censhare_keycloak_db_mode`: Specifies whether the database is in a container, hosted on the same machine, or delegated elsewhere. Options: `container`, `hosted`, `delegated`. Default: `container`.
 - `censhare_keycloak_db_data_dir`: Directory for database data storage. Default: `/var/lib/pgsql/data`.
 - `censhare_keycloak_db_host`: Hostname of the database server. Default: `postgres`.
 - `censhare_keycloak_db_user`: Database username for Keycloak. Default: `keycloak`.
@@ -42,6 +42,7 @@ This Ansible role installs and configures Keycloak as the authentication service
 
 ### Keycloak Client Configuration
 
+- `censhare_keycloak_client_redirect_uris`: Final list of redirect URIs configured for the censhare client. Defaults to the `*_default` list (https/http wildcard entries) plus `censhare_keycloak_client_redirect_uris_extra` so you can append custom callbacks.
 - `censhare_keycloak_client_secret`: Secret for the Keycloak client. Default: `client_secret`.
 - `censhare_keycloak_desktop_secret`: Secret for the desktop client. Default: `desktop_secret`.
 
@@ -64,7 +65,7 @@ This Ansible role installs and configures Keycloak as the authentication service
 
 ## Dependencies
 
-There are no external role dependencies. However, this role requires several base packages to be present on the system, which are typically covered under the installation tasks within the role.
+There are no external role dependencies. However, this role requires standard system packages (Podman, runc, etc.) which the role installs/configures automatically when `censhare_keycloak_self_hosted` is `true`.
 
 ## Example Playbook
 

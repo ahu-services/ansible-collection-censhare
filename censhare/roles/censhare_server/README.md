@@ -1,72 +1,80 @@
 # censhare Server Ansible Role
 
-This Ansible role installs and configures the censhare server, setting up necessary components like the Core Cloud Gateway, Static Resource Server, and the relevant databases and web applications. It's designed for environments requiring automated, consistent deployments of censhare applications.
+This role installs and configures the censhare Server stack (Server, Core Cloud Gateway, Static Resource Server) on EL8/EL9 hosts. It wires repositories, installs RPMs, opens firewall/Selinux ports, renders censhare XML configs, and starts the supporting services.
+
+## What the role does
+
+- Configures censhare and tools repositories with provided credentials, imports the signing key (EL8), and installs server, CGW, and SRS RPMs.
+- Creates censhare sysconfig with `CSS_ID`, renders launcher/server/services XML from versioned templates, and ensures directories under `/opt/corpus/cscs/app/**`.
+- Optionally mounts and links filesystems for assets/archive/interfaces; configures Keycloak and mail service XML when enabled.
+- Sets SELinux port labels for CGW/SRS when SELinux is enforcing; opens firewall ports (9000, 8081, 8082, 30546) if firewalld is running.
+- Deploys webpack artifacts for SRS (download + unarchive) and starts/enables `censhare.core-cloud-gateway` and `censhare.static-resource-server`.
+- Supports remote-service setups (SSH key distribution, keystore generation, template sync) when `censhare_server_remote_server` is true.
 
 ## Requirements
 
-- Ansible 2.1 or higher.
-- Access to a repository containing the censhare packages.
-- The target servers must have access to the Internet to fetch dependencies unless all required packages are hosted internally.
-- Python3 and `dnf` module installed on the target machines for managing packages.
+- Ansible 2.14 or newer (matches role metadata).
+- EL8/EL9 hosts with systemd, Python 3, `dnf`, and outbound access to censhare repositories (or mirrors).
+- A privileged user to install RPMs, manage firewall/SELinux, and write to `/opt/corpus`.
+- Mandatory: `censhare_server_repo_user` and `censhare_server_repo_pass` must be set; the role fails fast if they are empty.
 
-## Role Variables
+## Key variables
 
-This role uses several variables to facilitate its configuration and ensure adaptability to different environments and use cases. Below are the categories of variables you'll need to understand and potentially modify:
+Versions and repo access:
+- `censhare_server_version` (default `2023.1.2`), `censhare_server_cgw_version` (`3.1.9-1`), `censhare_server_srs_version` (`3.0.5-1`)
+- `censhare_server_repo_user` / `censhare_server_repo_pass` (no defaults; required)
+- `censhare_server_repo_host`, `censhare_server_repo_path`, `censhare_server_tools_repo_path` control repository URLs
 
-### Mandatory Variables
+Server/runtime:
+- `censhare_server_css_id` (default `master`), `censhare_server_remote_server` (default `false`), `censhare_server_master_server_delegate` (host used for templating/sync)
+- `censhare_server_jvm`/`_min`/`_max` (default `10g`) and `censhare_server_allowed_origins`
+- Filesystem mounts via `censhare_server_filesystems` (see commented examples in `defaults/main.yml`)
 
-These variables must be set for the role to function correctly. They are crucial for accessing the repositories containing the necessary software packages:
+Database:
+- `censhare_server_db_host`/`_port`/`_name`/`_user`/`_pass`; JDBC URL derives from these
+- Master node installs `python3-psycopg2` and runs `CheckJDBC.sh`; creates schema when missing
 
-- `censhare_server_repo_user`: The repository username for accessing the censhare software packages.
-- `censhare_server_repo_pass`: The repository password.
+Keycloak / Web frontends:
+- `censhare_server_keycloak_domain`, `censhare_server_keycloak_uri`, realm/user/client secrets, `censhare_server_host_port`
+- Webpack deploy toggled via `censhare_server_srs_deploy_webpack_artifact` (default `true`); artifact URL uses repo credentials
 
-### Commonly Modified Variables
+Mail and TLS automation:
+- `censhare_server_mail_*` flags/credentials control optional mail service XML
+- `censhare_server_certbot_enabled` plus ACME directory/FQDN settings for certbot integration
 
-In a typical production environment, you may need to adjust the following variables to suit your specific setup:
+See `roles/censhare_server/defaults/main.yml` for the full list.
 
-- `censhare_server_db_host`: Specifies the hostname of the database server.
-- `censhare_server_db_user`: Database username for accessing your PostgreSQL database.
-- `censhare_server_db_pass`: Password for the database user.
-- `censhare_server_keycloak_domain`: The domain where Keycloak for censhare is hosted.
-- `censhare_server_allowed_origins`: Specifies the origins allowed for cross-origin resource sharing (CORS).
-- `censhare_server_jvm`: Defines the Java Virtual Machine settings such as memory allocation.
-
-### Version Control Variables
-
-These variables allow the control of specific software versions to be installed. It's important to keep these up-to-date or align them with the versions you require:
-
-- `censhare_server_version`: Main version of the censhare server software, e.g., "2023.1.2".
-- `censhare_server_cgw_version`: Version of the censhare Core Cloud Gateway, e.g., "3.1.9-1".
-- `censhare_server_srs_version`: Version of the censhare Static Resource Server, e.g., "3.0.5-1".
-
-### Multi-Server Configuration
-
-For setups involving multiple servers, each server must be uniquely identifiable:
-
-- `censhare_server_css_id`: A unique identifier for each server instance in a multi-server environment.
-
-These variables can be set directly in the playbook, included via external variables files, or managed through group_vars/host_vars depending on your organizational practices.
-
-## Dependencies
-
-There are no external role dependencies. However, this role requires several base packages to be present on the system, which are typically covered under the installation tasks within the role.
-
-## Example Playbook
-
-Including an example of how to use your role (for instance, with variables passed in as parameters):
+## Example playbook
 
 ```yaml
-- hosts: censhare_servers
+- name: Install censhare Server
+  hosts: censhare_servers
+  become: true
+  vars:
+    censhare_server_repo_user: "{{ lookup('env', 'CENSHARE_REPO_USER') }}"
+    censhare_server_repo_pass: "{{ lookup('env', 'CENSHARE_REPO_PASS') }}"
+    censhare_server_db_host: "db.internal"
+    censhare_server_db_user: "corpus"
+    censhare_server_db_pass: "supersecret"
+    censhare_server_keycloak_domain: "auth.example.com"
+    censhare_server_allowed_origins: "censhare.example.com:9000"
+    censhare_server_filesystems:
+      - name: assets
+        usage: assets
+        mount: nfs
+        src: "10.0.0.10:/srv/assets"
+        dest: "/asset"
+    censhare_server_remote_server: false
   roles:
-     - { role: ahu_services.censhare.censhare_server, censhare_server_db_host: 'db.example.com' }
+    - ahu_services.censhare.censhare_server
 ```
 
-License
--------
+Useful tags: `css_install`, `css_server_config`, `css_database_config`, `css_services_config`, `css_webpack_config`.
+
+## License
 
 BSD
 
-Author Information
-------------------
+## Author Information
 
 This role was created in 2024 by Andreas Hubert. For more information, contact andreas.hubert@ahu.services
