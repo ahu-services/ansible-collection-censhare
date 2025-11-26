@@ -18,6 +18,7 @@ This Ansible role installs and configures HAProxy for use in a censhare environm
 - `censhare_proxy_cgw_port`: Define the default port for censhare Cloud Gateway backend services. Default: `8082`.
 - `censhare_proxy_css_port`: Define the default port for censhare Web backend services. Default: `9000`.
 - `censhare_proxy_rmi_port`: Define the default port for censhare RMI backend services. Default: `30546`.
+- `censhare_proxy_timeout_client` / `censhare_proxy_timeout_server`: Global HAProxy client/server timeouts. Default: `1m` each.
 - `censhare_proxy_default_redirect`: Path to redirect to from `/` root path. Default: `censhare5/client`.
 - `censhare_proxy_ssl`: Which SSL service to use in the backend. Valid options: `self-signed`, `lets-encrypt`, or `commercial`. Default: `self-signed`.
 - `censhare_proxy_ssl_domain`: Domain used for SSL certificates.
@@ -25,7 +26,22 @@ This Ansible role installs and configures HAProxy for use in a censhare environm
 
 ### Role Variables for use with lets encrypt
 
-- `censhare_proxy_ssl_acme_fingerprint`: The fingerprint from lets encrypt account.
+- `censhare_proxy_ssl_acme_fingerprint`: The ACME account thumbprint (required when `censhare_proxy_ssl` is `lets-encrypt`). acme.sh does not store it on disk; capture it when registering/updating the account.
+- The ACME flow installs acme.sh if missing, ensures `/etc/haproxy/certs` exists, issues a cert for `censhare_proxy_ssl_domain` if none exists, and writes a combined PEM to `/etc/haproxy/certs/{{ domain }}.pem` (HAProxy bind path). HAProxy is reloaded after install.
+
+To obtain the thumbprint (once, manually):
+1. Install acme.sh (e.g. `curl https://get.acme.sh | sh`).
+2. Register your account: `~/.acme.sh/acme.sh --register-account -m you@example.com --server letsencrypt`.
+3. Capture the printed `ACCOUNT_THUMBPRINT='...'` from that command (or re-run `--update-account --server letsencrypt --debug` after registration to print it again).
+4. Set `censhare_proxy_ssl_acme_fingerprint` to that value in your inventory/vars.
+
+### Stats listener
+
+- `censhare_proxy_stats_enabled`: Toggle the stats listener. Default: `false`.
+- `censhare_proxy_stats_port`: Port for the stats listener. Default: `8404`.
+- `censhare_proxy_stats_uri`: URI path for stats. Default: `/stats`.
+- `censhare_proxy_stats_refresh`: Refresh interval. Default: `10s`.
+- `censhare_proxy_stats_user` / `censhare_proxy_stats_pass`: Basic auth credentials. Defaults: `admin` / `admin`.
 
 ## Dependencies
 

@@ -1,5 +1,8 @@
 # censhare Service Client Ansible Role
 
+> [!WARNING]
+> This role uses default credentials for demonstration and testing purposes. **For production environments, you must override these defaults.** Relying on the default credentials poses a significant security risk. Please refer to the "Role Variables" section to identify and change all default passwords and secrets.
+
 This role provisions the censhare Service Client stack on Red Hat compatible hosts. It installs Podman, pulls the censhare Service Client and Collabora CODE images, and wires both into Podman Quadlets so systemd manages them natively.
 
 ## What the role does

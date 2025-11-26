@@ -11,7 +11,7 @@ global
     ssl-default-server-ciphers EECDH+AESGCM:EDH+AESGCM
 {% if censhare_proxy_ssl == "lets-encrypt" %}
     stats socket /var/run/haproxy/admin.sock level admin mode 660
-    setenv ACCOUNT_THUMBPRINT '{{ censhare_proxy_ssl_acme_fingerprint}}'
+    setenv ACCOUNT_THUMBPRINT '{{ censhare_proxy_ssl_thumbprint }}'
 {% else %}
     stats socket /var/lib/haproxy/stats
 {% endif %}
@@ -23,8 +23,17 @@ defaults
     option                  dontlognull
     retries                 3
     timeout connect         10s
-    timeout client          1m
-    timeout server          1m
+    timeout client          {{ censhare_proxy_timeout_client }}
+    timeout server          {{ censhare_proxy_timeout_server }}
     timeout http-keep-alive 10s
     timeout http-request    10s
     timeout tunnel          1h
+
+{% if censhare_proxy_stats_enabled | bool %}
+listen stats
+  bind *:{{ censhare_proxy_stats_port }}
+  stats enable
+  stats uri {{ censhare_proxy_stats_uri }}
+  stats refresh {{ censhare_proxy_stats_refresh }}
+  stats auth {{ censhare_proxy_stats_user }}:{{ censhare_proxy_stats_pass }}
+{% endif %}

@@ -1,5 +1,8 @@
 # censhare Keycloak Ansible Role
 
+> [!WARNING]
+> This role uses default credentials for demonstration and testing purposes. **For production environments, you must override these defaults.** Relying on the default credentials poses a significant security risk. Please refer to the "Role Variables" section to identify and change all default passwords and secrets.
+
 This Ansible role installs and configures Keycloak as the authentication service for censhare Systems. It includes configuration for managing realms, clients, users, and SMTP settings.
 
 ## Requirements

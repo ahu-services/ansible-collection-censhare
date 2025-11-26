@@ -1,5 +1,8 @@
 # censhare Server Ansible Role
 
+> [!WARNING]
+> This role may use default credentials for demonstration and testing purposes. **For production environments, you must override these defaults.** Relying on the default credentials poses a significant security risk. Please refer to the "Role Variables" section to identify and change all default passwords and secrets.
+
 This role installs and configures the censhare Server stack (Server, Core Cloud Gateway, Static Resource Server) on EL8/EL9 hosts. It wires repositories, installs RPMs, opens firewall/Selinux ports, renders censhare XML configs, and starts the supporting services.
 
 ## What the role does

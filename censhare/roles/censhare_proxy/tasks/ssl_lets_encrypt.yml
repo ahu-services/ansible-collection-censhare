@@ -7,6 +7,15 @@
       - socat
     state: present
 
+- name: Ensure HAProxy cert directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/haproxy/certs
+    state: directory
+    mode: '0750'
+    owner: root
+    group: root
+
 - name: Check if acme.sh is already installed
   become: true
   ansible.builtin.stat:
@@ -27,3 +36,49 @@
     path: /root/.bashrc
     line: 'export PATH="$HOME/.acme.sh:$PATH"'
     state: present
+
+- name: Set ACME thumbprint fact
+  ansible.builtin.set_fact:
+    censhare_proxy_ssl_thumbprint: "{{ censhare_proxy_ssl_acme_fingerprint | default('', true) }}"
+
+- name: Fail if ACME thumbprint missing
+  ansible.builtin.fail:
+    msg: "Lets Encrypt selected but no ACME account thumbprint provided. Register the account with acme.sh and set censhare_proxy_ssl_acme_fingerprint."
+  when: (censhare_proxy_ssl_thumbprint | default('')) | length == 0
+
+- name: Check for existing certificate
+  become: true
+  ansible.builtin.stat:
+    path: "/root/.acme.sh/{{ censhare_proxy_ssl_domain }}/{{ censhare_proxy_ssl_domain }}.cer"
+  register: censhare_proxy_le_cert
+
+- name: Issue certificate with acme.sh (standalone)
+  become: true
+  ansible.builtin.command:
+    cmd: "/root/.acme.sh/acme.sh --issue --standalone -d {{ censhare_proxy_ssl_domain }} --keylength 4096"
+  when: not censhare_proxy_le_cert.stat.exists
+  changed_when: true
+  check_mode: false
+
+- name: Read issued key
+  become: true
+  ansible.builtin.slurp:
+    src: "/root/.acme.sh/{{ censhare_proxy_ssl_domain }}/{{ censhare_proxy_ssl_domain }}.key"
+  register: censhare_proxy_le_key
+
+- name: Read issued fullchain
+  become: true
+  ansible.builtin.slurp:
+    src: "/root/.acme.sh/{{ censhare_proxy_ssl_domain }}/fullchain.cer"
+  register: censhare_proxy_le_fullchain
+
+- name: Install combined certificate for HAProxy
+  become: true
+  ansible.builtin.copy:
+    dest: "/etc/haproxy/certs/{{ censhare_proxy_ssl_domain }}.pem"
+    content: "{{ (censhare_proxy_le_key.content | b64decode) + (censhare_proxy_le_fullchain.content | b64decode) }}"
+    mode: '0600'
+    owner: root
+    group: root
+  notify:
+    - Reload haproxy
