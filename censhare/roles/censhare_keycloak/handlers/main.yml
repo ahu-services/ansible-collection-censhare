@@ -1,0 +1,14 @@
+---
+- name: Restart keycloak quadlet
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ censhare_keycloak_service_unit }}"
+    daemon_reload: true
+    state: restarted
+
+- name: Restart keycloak database quadlet
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ censhare_keycloak_db_service_unit }}"
+    daemon_reload: true
+    state: restarted

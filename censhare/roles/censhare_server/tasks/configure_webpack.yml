@@ -1,0 +1,81 @@
+---
+# tasks file for censhare_server
+- name: "Configure Webpack Components | Configure censhare Core Cloud Gateway"
+  become: true
+  ansible.builtin.template:
+    src: webpack/cgw_application_yml.j2
+    dest: /opt/censer/core-cloud-gateway/application.yml
+    owner: censer
+    group: censer
+    mode: '0644'
+  notify: Restart Cloud Gateway
+  tags:
+    - css_webpack_config
+
+- name: "Configure Webpack Components | Configure censhare Static Resource Server"
+  become: true
+  ansible.builtin.template:
+    src: webpack/srs_application_yml.j2
+    dest: /opt/censer/static-resource-server/application.yml
+    owner: censer
+    group: censer
+    mode: '0644'
+  notify: Restart Static Resource Server
+  tags:
+    - css_webpack_config
+
+- name: Configure Webpack Components | Ensure /opt/webpack directory exists
+  become: true
+  ansible.builtin.file:
+    path: /opt/webpack
+    state: directory
+    owner: corpus
+    group: corpus
+    mode: '0775'
+  tags:
+    - css_webpack_config
+
+- name: Configure Webpack Components | Deploy webpack artifact
+  when: censhare_server_srs_deploy_webpack_artifact
+  block:
+    - name: Configure Webpack Components | Download Webpack Artifact
+      ansible.builtin.get_url:
+        url: "{{ censhare_server_static_resource_server_webpack_artifact_url }}"
+        url_username: "{{ censhare_server_repo_user }}"
+        url_password: "{{ censhare_server_repo_pass }}"
+        force_basic_auth: true
+        dest: "/tmp/{{ censhare_server_static_resource_server_webpack_artifact_url | basename }}"
+        mode: "0664"
+      no_log: true
+      tags:
+        - css_webpack_config
+
+    - name: Configure Webpack Components | Unpack webpack artifact to destination directory
+      become: true
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ censhare_server_static_resource_server_webpack_artifact_url | basename }}"
+        dest: /opt/webpack/
+        remote_src: true
+        owner: corpus
+        group: corpus
+      when: not ansible_check_mode
+      tags:
+        - css_webpack_config
+
+- name: Configure Webpack Components | Start and enable Cloud Gateway
+  become: true
+  ansible.builtin.service:
+    name: censhare.core-cloud-gateway
+    state: started
+    enabled: true
+  tags:
+    - css_webpack_config
+
+- name: Configure Webpack Components | Start and enable Static Resource Server
+  become: true
+  ansible.builtin.service:
+    name: censhare.static-resource-server
+    state: started
+    enabled: true
+  tags:
+    - css_webpack_config

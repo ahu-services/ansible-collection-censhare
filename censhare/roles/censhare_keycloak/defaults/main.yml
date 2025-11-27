@@ -1,0 +1,103 @@
+---
+# defaults file for ahu_services.censhare.censhare_keycloak
+censhare_keycloak_version: 24.0.5
+censhare_keycloak_self_hosted: true
+censhare_keycloak_db_mode: container # || hosted || delegated
+censhare_keycloak_db_home_dir: /var/lib/pgsql
+censhare_keycloak_db_data_dir: "{{ censhare_keycloak_db_home_dir }}/data"
+censhare_keycloak_admin_user: admin
+censhare_keycloak_admin_pass: secret
+censhare_keycloak_db_host: postgres
+censhare_keycloak_db_version: 17
+censhare_keycloak_db_user: keycloak
+censhare_keycloak_db_pass: keycloak
+censhare_keycloak_db_name: keycloak
+censhare_keycloak_db_uid: 999
+censhare_keycloak_db_gid: 999
+censhare_keycloak_domain: auth.example.com
+censhare_keycloak_hostname_url: https://{{ censhare_keycloak_domain }}/auth
+censhare_keycloak_client_redirect_uris_default:
+  - "https://{{ censhare_keycloak_domain }}/*"
+  - "http://{{ censhare_keycloak_domain }}/*"
+censhare_keycloak_client_redirect_uris_extra: []
+censhare_keycloak_client_redirect_uris: "{{ censhare_keycloak_client_redirect_uris_default + censhare_keycloak_client_redirect_uris_extra }}"
+censhare_keycloak_pgdata_path: /var/lib/postgresql/data
+censhare_keycloak_container_name: keycloak
+censhare_keycloak_db_container_name: postgres
+censhare_keycloak_service_unit: "{{ censhare_keycloak_container_name }}.service"
+censhare_keycloak_db_service_unit: "{{ censhare_keycloak_db_container_name }}.service"
+censhare_keycloak_http_enabled: true
+censhare_keycloak_http_host_port: 8080
+censhare_keycloak_http_container_port: 8080
+censhare_keycloak_tls_enabled: false
+censhare_keycloak_https_host_port: 8443
+censhare_keycloak_https_container_port: 8443
+censhare_keycloak_tls_dir: /etc/keycloak/tls
+censhare_keycloak_tls_private_key_path: "{{ censhare_keycloak_tls_dir }}/tls.key"
+censhare_keycloak_tls_certificate_path: "{{ censhare_keycloak_tls_dir }}/tls.crt"
+censhare_keycloak_tls_keystore_file: "{{ censhare_keycloak_tls_dir }}/keycloak.p12"
+censhare_keycloak_tls_container_keystore_file: /opt/keycloak/conf/keycloak.p12
+censhare_keycloak_tls_keystore_password: changeit
+censhare_keycloak_tls_csr_path: "{{ censhare_keycloak_tls_dir }}/keycloak.csr"
+censhare_keycloak_tls_certificate_src: ""
+censhare_keycloak_tls_certificate_content: ""
+censhare_keycloak_tls_private_key_src: ""
+censhare_keycloak_tls_private_key_content: ""
+censhare_keycloak_tls_self_signed_subject: "/CN={{ censhare_keycloak_domain }}"
+censhare_keycloak_tls_self_signed_sans:
+  - "DNS:{{ censhare_keycloak_domain }}"
+censhare_keycloak_tls_self_signed_valid_days: 825
+censhare_keycloak_http_relative_path: /auth
+censhare_keycloak_proxy_headers: xforwarded
+censhare_keycloak_realm: censhare
+censhare_keycloak_realm_roles:
+  - create-client
+  - impersonation
+  - manage-authorization
+  - manage-clients
+  - manage-events
+  - manage-identity-providers
+  - manage-realm
+  - manage-users
+  - query-clients
+  - query-groups
+  - query-realms
+  - query-users
+  - realm-admin
+  - view-authorization
+  - view-clients
+  - view-events
+  - view-identity-providers
+  - view-realm
+  - view-users
+censhare_keycloak_svc_user: keycloak-service
+censhare_keycloak_svc_pass: service_password
+censhare_keycloak_client_secret: client_secret
+censhare_keycloak_desktop_secret: desktop_secret
+censhare_keycloak_smtp_host: mail.example.com
+censhare_keycloak_smtp_user: ""
+censhare_keycloak_smtp_pass: ""
+censhare_keycloak_smtp_from: mailuser@example.com
+censhare_keycloak_smtp_from_display_name: censhare Keycloak
+censhare_keycloak_smtp_reply_to: no-reply@example.com
+censhare_keycloak_smtp_port: "587"
+censhare_keycloak_smtp_starttls: "true"
+censhare_keycloak_smtp_ssl: "true"
+censhare_keycloak_smtp_auth: "true"
+censhare_keycloak_realms_defaults:
+  - name: "{{ censhare_keycloak_realm }}"
+    svc_user: "{{ censhare_keycloak_svc_user }}"
+    svc_pass: "{{ censhare_keycloak_svc_pass }}"
+    client_secret: "{{ censhare_keycloak_client_secret }}"
+    desktop_secret: "{{ censhare_keycloak_desktop_secret }}"
+    smtp_host: "{{ censhare_keycloak_smtp_host }}"
+    smtp_user: "{{ censhare_keycloak_smtp_user }}"
+    smtp_pass: "{{ censhare_keycloak_smtp_pass }}"
+    smtp_from: "{{ censhare_keycloak_smtp_from }}"
+    smtp_from_display_name: "{{ censhare_keycloak_smtp_from_display_name }}"
+    smtp_reply_to: "{{ censhare_keycloak_smtp_reply_to }}"
+    smtp_port: "{{ censhare_keycloak_smtp_port }}"
+    smtp_starttls: "{{ censhare_keycloak_smtp_starttls }}"
+    smtp_ssl: "{{ censhare_keycloak_smtp_ssl }}"
+    smtp_auth: "{{ censhare_keycloak_smtp_auth }}"
+censhare_keycloak_realms: "{{ censhare_keycloak_realms_defaults }}"

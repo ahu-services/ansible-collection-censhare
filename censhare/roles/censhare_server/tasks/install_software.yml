@@ -1,0 +1,65 @@
+---
+# tasks file for censhare_server
+- name: "Install censhare Components | Add signing key"
+  become: true
+  ansible.builtin.rpm_key:
+    state: present
+    key: "{{ censhare_server_repo_gpg_url }}"
+  when: ansible_distribution_major_version | int < 9
+
+- name: "Install censhare Components | Configure censhare-Server repository"
+  become: true
+  ansible.builtin.yum_repository:
+    name: "censhare-Server"
+    description: "censhare Server Repository"
+    baseurl: "{{ censhare_server_repo_url }}"
+    gpgcheck: "{{ ansible_distribution_major_version | int < 9 | ternary(1, 0) }}"
+    gpgkey: "{{ censhare_server_repo_gpg_url }}"
+    enabled: false
+    state: "present"
+
+- name: "Install censhare Components | Configure censhare-tools repository"
+  become: true
+  ansible.builtin.yum_repository:
+    name: "censhare-tools"
+    description: "censhare Tools Repository"
+    baseurl: "{{ censhare_server_tools_repo_url }}"
+    gpgcheck: "{{ ansible_distribution_major_version | int < 9 | ternary(1, 0) }}"
+    gpgkey: "{{ censhare_server_repo_gpg_url }}"
+    enabled: false
+    state: "present"
+
+
+- name: "Install censhare Components | Install censhare-Server"
+  become: true
+  ansible.builtin.dnf:
+    name:
+      - "censhare-Server-{{ censhare_server_version }}"
+      - "censhare-core-cloud-gateway-{{ censhare_server_cgw_version }}"
+      - "censhare-static-resource-server-{{ censhare_server_srs_version }}"
+    enablerepo: "censhare-Server,censhare-tools"
+    state: present
+    update_cache: true
+
+- name: "Configure censhare CSS_ID"
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/sysconfig/censhare
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      #!## censhare.tpl
+      #### cenShare Parameters
+
+      ## Description: corpus user
+      ## Type:        string
+      ## Mandatory:   yes
+      ## Default:     "corpus"
+      CORPUS="corpus"
+
+      ## Description: censhare ID - needed if not set in ~$CORPUS/.profile
+      ## Type:        string
+      ## Mandatory:   yes
+      ## Default:     ""
+      CSS_ID="{{ censhare_server_css_id }}"

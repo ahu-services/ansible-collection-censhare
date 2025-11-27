@@ -1,9 +1,0 @@
-{{ ansible_managed | comment }}
-backend rmi_backend
-    mode tcp
-    balance leastconn
-    stick-table type ip size 200k expire 30m
-    stick on src    
-{% for backend in censhare_proxy_backends_rmi %}
-    server {{ backend.name }} {{ backend.address }}:{{ censhare_proxy_rmi_port }} check ssl verify none
-{% endfor %}

@@ -1,0 +1,14 @@
+---
+- name: Restart collabora quadlet
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ censhare_sclient_collabora_service_unit }}"
+    daemon_reload: true
+    state: restarted
+
+- name: Restart service-client quadlet
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ censhare_sclient_service_unit }}"
+    daemon_reload: true
+    state: restarted

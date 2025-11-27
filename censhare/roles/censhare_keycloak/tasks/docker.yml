@@ -1,0 +1,28 @@
+---
+# tasks file for installing Docker on Amazon Linux 2023
+
+- name: Install Docker
+  become: true
+  ansible.builtin.dnf:
+    name: docker
+    state: present
+
+- name: Start and enable Docker service
+  become: true
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Add current user to the docker group
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_ssh_user | default(ansible_env.USER) }}"
+    groups: docker
+    append: true
+
+- name: Create Docker network for keycloak
+  become: true
+  community.docker.docker_network:
+    name: keycloak
+    state: present

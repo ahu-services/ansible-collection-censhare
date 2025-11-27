@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+{{ ansible_managed | comment('xml') }}
+<startup
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="launcher.xsd"
+
+    jvmcmd="java"
+    mainclass="com.censhare.server.kernel.CenShareServer"
+    common-lib-dir="file:common/lib/"
+    jdk-tools-jar-path="file:../lib/tools.jar"
+    >
+    <xml-info
+    title="Launcher configuration"
+    description="&lt;html&gt;censhare Server startup/bootstrap configuration.&lt;br&gt;&lt;b&gt;Changes will take affect only after a server restart!&lt;/b&gt;&lt;/html&gt;"
+    version="3">
+        <property-resources>
+            <base url="file:module"/>
+            <base url="file:../common/global"/>
+        </property-resources>
+    </xml-info>
+    <admin-info dialog-id="config-launcher" dialog-url="file:config-dialog.xml"/>
+    <jvmargs>
+        <!-- general -->
+        <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,address=*:8001,suspend=n" enabled="false"/>
+        <jvmarg value="-server" enabled="true"/>
+        <!-- enable assertions -->
+        <jvmarg value="-ea:com.censhare..."/>
+        <jvmarg value="-ea:source..."/>
+        <jvmarg value="-ea:modules..."/>
+        <!-- deep reflection access for ExceptionSanitizer -->
+        <jvmarg value="--add-opens=java.sql/java.sql=ALL-UNNAMED"/>
+        <!-- gc logging -->
+        <jvmarg value="-verbose:gc" enabled="true"/>
+        <!-- GC options modified for Java 11 compatibility -->
+        <!-- Details see https://docs.oracle.com/javase/9/tools/java.htm#GUID-BE93ABDC-999C-4CB5-A88B-1994AAAC74D5__CONVERTGCLOGGINGFLAGSTOXLOG-A5046BD1 -->
+        <jvmarg value="-Xlog:gc:work/logs/gc.log:time" enabled="true"/>
+        <jvmarg value="-Xlog:gc*:work/logs/gc.log:time" enabled="false"/>
+        <jvmarg value="-Xlog:safepoint" enabled="true"/>
+        <!-- HeapDumpOnOutof Memory -->
+        <jvmarg value="-XX:+HeapDumpOnOutOfMemoryError" enabled="true"/>
+        <jvmarg value="-XX:HeapDumpPath=../../"/>
+        <!-- write java crash logs to work/logs -->
+        <jvmarg value="-XX:ErrorFile=work/logs/java_error%p.log" enabled="true"/>
+        <!-- ensure complete stack traces from JIT optimized methods -->
+        <jvmarg value="-XX:-OmitStackTraceInFastThrow" enabled="true"/>
+        <!-- machines with 8 cores or more, RAM greater-equal 16GB, G1GC -->
+        <jvmarg value="-Xms{{ censhare_server_jvm_min }}" enabled="true"/>
+        <jvmarg value="-Xmx{{ censhare_server_jvm_max }}" enabled="true"/>
+        <jvmarg value="-XX:+UseCompressedOops" enabled="true"/>
+        <jvmarg value="-XX:+UseG1GC"/>
+        <jvmarg value="-XX:G1HeapRegionSize=16m"/>
+    </jvmargs>
+    <!-- java system properties that must be set on the command line-->
+    <sysproperties>
+        <sysproperty key="java.util.logging.manager" value="com.censhare.support.util.logging.CustomLogManager" enabled="true"/>
+        <sysproperty key="java.security.manager" value="java.rmi.RMISecurityManager" enabled="true"/>
+        <sysproperty key="java.security.policy" value="@current.runtime.dir@config/censhareserver.policy" enabled="true"/>
+        <sysproperty key="java.security.properties" value="@current.runtime.dir@config/security.properties" enabled="true"/>
+        <sysproperty key="mail.mime.charset" value="UTF-8" enabled="true"/>
+        <sysproperty key="file.encoding" value="UTF-8" enabled="true"/>
+        <sysproperty key="com.sun.management.jmxremote" value="" enabled="true"/>
+
+        <sysproperty key="com.sun.management.config.file" value="@current.runtime.dir@config/management.properties" enabled="true"/>
+        <!-- Default directories for config resolver: -->
+        <sysproperty key="censhare.config.default.dir" value="file:app/" enabled="false"/>
+        <sysproperty key="censhare.config.custom.dir" value="file:../censhare-Custom/censhare-Server/app/" enabled="false"/>
+        <sysproperty key="censhare.config.runtime.dir" value="file:@current.runtime.dir@" enabled="false"/>
+        <!-- automatic database update -->
+        <!-- enabled="true" by default ONLY for dev/Stage environments -->
+        <!-- should be enabled="false" for production environments     -->
+        <sysproperty key="censhare.automatic.database.update" value="true" enabled="false"/>
+        <!-- using versioned asset features -->
+        <sysproperty key="censhare.versioned-features" value="true" enabled="false"/>
+        <!-- calculate asset flags over asset xml instead of data base -->
+        <sysproperty key="censhare.assetxml-flag-calculation" value="false" enabled="true"/>
+        <!-- in case flag calculation over data base is enabled: with false (default) the old SQL based variant is used and with true the new one (which is supposed to have better performance) -->
+        <sysproperty key="censhare.new-sql-flag-calculation" value="true" enabled="true"/>
+        <!-- use node.js instead of jsass for sass compilation -->
+        <sysproperty key="censhare.sass.use-node" value="true" enabled="false"/>
+        <!-- limit altresult calculation for large relation queries -->
+        <sysproperty key="com.censhare.db.query.relation-altresult-threshold" value="1000" enabled="false"/>
+        <!-- use LegacyMergeSort for Java6 compatibility -->
+        <sysproperty key="java.util.Arrays.useLegacyMergeSort" value="true" enabled="true"/>
+        <!-- disable ECC for Java6 compatibility - workaround for bug "http://bugs.sun.com/view_bug.do?bug_id=7016078" -->
+        <sysproperty key="com.sun.net.ssl.enableECC" value="false" enabled="false"/>
+        <!-- https://stackoverflow.com/questions/48458187/sslhandshakeexception-received-fatal-alert-unrecognized-name-on-openjdk -->
+        <sysproperty key="jsse.enableSNIExtension" value="false" enabled="false"/>
+
+        <sysproperty key="javax.xml.parsers.SAXParserFactory" value="com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl" enabled="true"/>
+        <sysproperty key="javax.xml.parsers.DocumentBuilderFactory" value="com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" enabled="true"/>
+        <!-- Avoid oracle timezone problems in ojdbc6: -->
+        <sysproperty key="oracle.jdbc.timezoneAsRegion" value="false" enabled="true"/>
+        <!--  Required for LDAP paging feature to work -->
+        <sysproperty key="java.naming.referral"                 value="follow" enabled="true"/>
+        <!-- Defines trait names that have to be excluded from the logical asset model. Multiple trait names are separated by comma. -->
+        <sysproperty key="com.censhare.model.traits.excluded" value="" enabled="false" />
+        <!-- Ensure that old/insecure SSL/TLS protocols are disabled. Only support TLS 1.3 and 1.2. -->
+        <sysproperty key="jdk.tls.client.protocols" value="TLSv1.3,TLSv1.2" enabled="true" />
+        <sysproperty key="jdk.tls.server.protocols" value="TLSv1.3,TLSv1.2" enabled="true" />
+        <!-- Set Diffie-Hellman (DH) keys of size 2048 bit -->
+        <sysproperty key="jdk.tls.ephemeralDHKeySize" value="2048" enabled="true" />
+        <!-- Enables cross site origin checks for websocket connections. This protects your system against CSWSH attacks. -->
+        <sysproperty key="com.censhare.websocket.origincheck" value="true" enabled="true"/>
+        <!-- A comma separated list of hostnames, that are allowed to establish a websocket connection to the server. Hint: the hostname of this server is not required to be listed -->
+        <sysproperty key="com.censhare.websocket.allowed.origins" value="{{ censhare_server_allowed_origins }}" enabled="true"/>
+        <!-- Flag that defines if the corresponding Keycloak session will be closed by the server on logout of a desktop-client user. -->
+        <sysproperty key="com.censhare.desktop-client.keycloak.server-side-logout" value="true" enabled="false"/>
+    </sysproperties>
+    <!-- programm arguments -->
+    <!--
+  <args>
+    <arg value=""/>
+  </args>
+  -->
+</startup>

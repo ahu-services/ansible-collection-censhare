@@ -1,0 +1,45 @@
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
+<?xml version="1.0" encoding="UTF-8" ?>
+{{ ansible_managed | comment('xml') }}
+<filesystems
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="filesystems.xsd"
+    enabled="true"
+    max-invocations="-1"
+
+    replication-use="use-master"
+    version="6"
+    >
+  <!-- comment node for admin client -->
+  <comment/>
+
+  <!-- Parameters:
+      - name: name of filesystem
+      - replication-id: name of replication (e.g. master, or copy1)
+      - type: plain|ethershare|appledouble|macosx|macos|windows
+      - url-creator: creator of filenames (including directories)
+      - url: mount point of this filesystem
+      - lost-found-dir: file in the way are not overwritten but moved to this dir.
+      - usage: assets|temp|other; how this volume is used
+  -->
+{% for fs in censhare_server_filesystems %}
+  <filesystem name="{{ fs.name }}" filesystem-type="fs-physical" usage="{{ fs.usage }}" type="plain" url-creator="storage-sequence" url="file:work/{{ fs.name }}/" lost-found-dir="file:lost+found/" protocol="default"/>
+  {% if fs.usage == "assets" %}
+  <filesystem name="{{ fs.name }}-temp" filesystem-type="fs-physical" usage="temp" type="plain" url-creator="nodir-temp-sequence" url="file:work/{{ fs.name }}-temp/" lost-found-dir="file:lost+found/" protocol="default"/>
+  {% endif %}
+{%- endfor %}
+  <filesystem name="temp" filesystem-type="fs-physical" usage="other" type="plain" url-creator="nodir-temp-sequence" url="file:work/temp/" lost-found-dir="file:lost+found/" protocol="default"/>
+  <filesystem name="client-software" filesystem-type="fs-physical" usage="client-software" type="plain" url="file:work/client-software/" protocol="default"/>
+  <filesystem name="spelling" filesystem-type="fs-physical" usage="spelling" type="plain" url="file:work/spelling/" protocol="default"/>
+  <!-- Programatically added filesystems:
+  <filesystem name="config-runtime" usage="config" type="plain" url="file:work/runtime/"/>
+  <filesystem name="config-default" usage="config" type="plain" url="file:app/"/>
+  <filesystem name="config-custom" usage="config" type="plain" url="file:../censhare-Custom/censhare-Server/app/"/>
+  -->
+  <filesystem name="error" filesystem-type="fs-physical" usage="error" type="plain" url="file:work/error/" protocol="default"/>
+  <filesystem name="logs" filesystem-type="fs-physical" usage="logs" type="plain" url="file:work/logs/" protocol="default"/>
+  <filesystem name="modules-system" filesystem-type="fs-physical" usage="modules" type="plain" url="file:install/system/" protocol="default"/>
+  <filesystem name="modules-runtime" filesystem-type="fs-physical" usage="modules" type="plain" url="_runtime_" protocol="default"/>
+  <filesystem name="modules-client" filesystem-type="fs-physical" usage="modules" type="plain" url="file:work/runtime-web/client/" protocol="default"/>
+  <filesystem name="translation" filesystem-type="fs-physical" usage="other" type="plain" url="file:work/translation/" protocol="default"/>
+</filesystems>

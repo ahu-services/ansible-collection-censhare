@@ -1,0 +1,58 @@
+---
+- name: Build list of exposed Keycloak ports
+  ansible.builtin.set_fact:
+    censhare_keycloak_exposed_ports: >-
+      {{
+        (censhare_keycloak_http_enabled | bool)
+        | ternary([censhare_keycloak_http_host_port], [])
+        +
+        (censhare_keycloak_tls_enabled | bool)
+        | ternary([censhare_keycloak_https_host_port], [])
+      }}
+
+- name: Determine if SELinux is enabled
+  ansible.builtin.set_fact:
+    censhare_keycloak_manage_selinux: >-
+      {{ (ansible_selinux is defined) and (ansible_selinux.status == 'enabled') }}
+
+- name: Gather service facts for firewall detection
+  become: true
+  ansible.builtin.service_facts:
+  when: censhare_keycloak_exposed_ports | length > 0
+
+- name: Determine if firewalld is available
+  ansible.builtin.set_fact:
+    censhare_keycloak_manage_firewalld: >-
+      {{
+        (
+          'firewalld.service' in (ansible_facts.services | default({}))
+        )
+      }}
+  when: censhare_keycloak_exposed_ports | length > 0
+
+- name: Allow Keycloak to bind to exposed ports (SELinux)
+  become: true
+  when:
+    - censhare_keycloak_manage_selinux | default(false)
+    - censhare_keycloak_exposed_ports | length > 0
+  loop: "{{ censhare_keycloak_exposed_ports }}"
+  loop_control:
+    label: "{{ item }}"
+  community.general.seport:
+    ports: "{{ item }}"
+    proto: tcp
+    setype: http_port_t
+
+- name: Open exposed ports for Keycloak (firewall)
+  become: true
+  when:
+    - censhare_keycloak_manage_firewalld | default(false)
+    - censhare_keycloak_exposed_ports | length > 0
+  loop: "{{ censhare_keycloak_exposed_ports }}"
+  loop_control:
+    label: "{{ item }}"
+  ansible.posix.firewalld:
+    port: "{{ item }}/tcp"
+    permanent: true
+    state: enabled
+    immediate: true

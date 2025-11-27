@@ -1,0 +1,35 @@
+---
+- name: "Configure Server | Create custom config directory"
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_server_config_path }}"
+    state: directory
+    mode: '0755'
+    owner: "corpus"
+    group: "corpus"
+  tags:
+    - css_server_config
+
+- name: "Configure Server | Create custom launcher config"
+  delegate_to: "{{ censhare_server_master_server_delegate }}"
+  become: true
+  ansible.builtin.template:
+    src: "{{ censhare_server_majmin_version }}/config/launcher_xml.j2"
+    dest: "{{ censhare_server_config_path }}/launcher.{{ censhare_server_css_id }}.xml"
+    mode: '0644'
+    owner: "corpus"
+    group: "corpus"
+  tags:
+    - css_server_config
+
+- name: "Configure Server | Create custom server config"
+  delegate_to: "{{ censhare_server_master_server_delegate }}"
+  become: true
+  ansible.builtin.template:
+    src: "{{ censhare_server_majmin_version }}/config/server_xml.j2"
+    dest: "{{ censhare_server_config_path }}/server.{{ censhare_server_css_id }}.xml"
+    mode: '0644'
+    owner: "corpus"
+    group: "corpus"
+  tags:
+    - css_server_config

@@ -1,8 +1,0 @@
----
-- name: Converge
-  hosts: all
-  remote_user: asudo
-  tasks:
-    - name: Include ahu_services.censhare.keycloak
-      ansible.builtin.include_role:
-        name: ahu_services.censhare.keycloak

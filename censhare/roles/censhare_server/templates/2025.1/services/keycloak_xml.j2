@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+{{ ansible_managed | comment('xml') }}
+<config
+    enabled="true"
+    max-invocations="2"
+    version="2"
+    authentication-server-base-url="{{ censhare_server_keycloak_uri }}"
+    authentication-server-realm-name="{{ censhare_server_keycloak_realm }}"
+    authentication-server-access-username="{{ censhare_server_keycloak_svc_user }}"
+    authentication-server-access-password="{{ censhare_server_keycloak_svc_pass }}"
+    authentication-server-client-id="{{ censhare_server_keycloak_client_id }}"
+    authentication-server-client-secret="{{ censhare_server_keycloak_client_secret }}"
+    authentication-server-native-app-client-id="{{ censhare_server_keycloak_desktop_id }}"
+    authentication-server-native-app-client-secret="{{ censhare_server_keycloak_desktop_secret }}"
+    authentication-server-native-app-base-url="{{ censhare_server_keycloak_uri }}"
+    >
+
+  <!-- comment node for admin client -->
+  <comment/>
+</config>

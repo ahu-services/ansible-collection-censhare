@@ -1,0 +1,154 @@
+---
+- name: "Configure Filesystem Service"
+  when: censhare_server_filesystems | length > 0
+  tags: css_services_config
+  block:
+    - name: Create mount points
+      become: true
+      ansible.builtin.file:
+        path: "{{ item.dest }}"
+        state: directory
+        owner: corpus
+        group: corpus
+        mode: '0775'
+      loop: "{{ censhare_server_filesystems }}"
+      when: item.mount != "none"
+      tags: css_services_config
+
+    - name: Mount NFS filesystems
+      become: true
+      ansible.posix.mount:
+        src: "{{ item.src }}"
+        path: "{{ item.dest }}"
+        fstype: nfs
+        opts: rw,sync,hard,intr
+        state: mounted
+      loop: "{{ censhare_server_filesystems }}"
+      when: item.mount == "nfs"
+      tags: css_services_config
+
+    - name: Create symlink for mounted filesystems
+      become: true
+      ansible.builtin.file:
+        src: "{{ item.dest }}"
+        dest: "/opt/corpus/work/{{ item.name }}"
+        state: link
+        owner: corpus
+        group: corpus
+      loop: "{{ censhare_server_filesystems }}"
+      when:
+        - item.mount != "none"
+        - item.dest != "/opt/corpus/work/" + item.name
+      tags: css_services_config
+
+    - name: Create temp directory for asset usage
+      become: true
+      ansible.builtin.file:
+        path: "{{ item.dest }}/{{ item.name }}-temp"
+        state: directory
+        owner: corpus
+        group: corpus
+        mode: '0775'
+      loop: "{{ censhare_server_filesystems }}"
+      when:
+        - item.usage == "assets"
+        - item.mount != "none"
+      tags: css_services_config
+
+    - name: Create symlink for temp directory for asset usage
+      become: true
+      ansible.builtin.file:
+        src: "{{ item.dest }}/{{ item.name }}-temp"
+        dest: "/opt/corpus/work/{{ item.name }}-temp"
+        state: link
+        owner: corpus
+        group: corpus
+      loop: "{{ censhare_server_filesystems }}"
+      when:
+        - item.usage == "assets"
+        - item.mount != "none"
+      tags: css_services_config
+
+    - name: Create directory for non-mounted filesystems
+      become: true
+      ansible.builtin.file:
+        path: "/opt/corpus/work/{{ item.name }}"
+        state: directory
+        owner: corpus
+        group: corpus
+        mode: '0775'
+      loop: "{{ censhare_server_filesystems }}"
+      when:
+        - item.mount == "none"
+      tags: css_services_config
+
+    - name: "Configure Filesystem Service | Create custom filesystem directory"
+      become: true
+      ansible.builtin.file:
+        path: "{{ censhare_server_services_path }}/filesystem"
+        state: directory
+        mode: '0755'
+        owner: "corpus"
+        group: "corpus"
+      tags: css_services_config
+
+    - name: "Configure Filesystem Service | Create custom filesystem config"
+      delegate_to: "{{ censhare_server_master_server_delegate }}"
+      become: true
+      ansible.builtin.template:
+        src: "{{ censhare_server_majmin_version }}/services/filesystem_xml.j2"
+        dest: "{{ censhare_server_services_path }}/filesystem/config.{{ censhare_server_css_id }}.xml"
+        mode: '0644'
+        owner: "corpus"
+        group: "corpus"
+      tags: css_services_config
+
+- name: "Configure Keycloak Service"
+  tags: css_services_config
+  block:
+    - name: "Configure Keycloak Service | Create custom Keycloak directory"
+      become: true
+      ansible.builtin.file:
+        path: "{{ censhare_server_services_path }}/keycloak"
+        state: directory
+        mode: '0755'
+        owner: "corpus"
+        group: "corpus"
+      tags: css_services_config
+
+    - name: "Configure Keycloak Service | Create custom Keycloak config"
+      delegate_to: "{{ censhare_server_master_server_delegate }}"
+      become: true
+      ansible.builtin.template:
+        src: "{{ censhare_server_majmin_version }}/services/keycloak_xml.j2"
+        dest: "{{ censhare_server_services_path }}/keycloak/config.{{ censhare_server_css_id }}.xml"
+        mode: '0644'
+        owner: "corpus"
+        group: "corpus"
+      tags: css_services_config
+
+
+- name: "Configure Mail Service"
+  when: "censhare_server_mail_enabled"
+  tags: css_services_config
+  block:
+    - name: "Configure Mail Service | Create custom mail directory"
+      become: true
+      ansible.builtin.file:
+        path: "{{ censhare_server_services_path }}/mail"
+        state: directory
+        mode: '0755'
+        owner: "corpus"
+        group: "corpus"
+      tags: css_services_config
+
+    - name: "Configure Mail Service | Create custom mail config"
+      delegate_to: "{{ censhare_server_master_server_delegate }}"
+      become: true
+      ansible.builtin.template:
+        src: "{{ censhare_server_majmin_version }}/services/mail_xml.j2"
+        dest: "{{ censhare_server_services_path }}/mail/config.xml"
+        mode: '0644'
+        owner: "corpus"
+        group: "corpus"
+      tags: css_services_config

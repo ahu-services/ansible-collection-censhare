@@ -1,0 +1,21 @@
+---
+- name: Ensure SSL directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_proxy_ssl_directory }}"
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+
+- name: Create cert file
+  become: true
+  ansible.builtin.copy:
+    content: "{{ censhare_proxy_domain_pem }}"
+    dest: "{{ censhare_proxy_ssl_directory }}/{{ censhare_proxy_ssl_domain }}.pem"
+    mode: '0600'
+    owner: root
+    group: root
+  notify:
+    - Reload haproxy
+  no_log: true

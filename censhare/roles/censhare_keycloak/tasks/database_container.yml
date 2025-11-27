@@ -1,0 +1,165 @@
+---
+# tasks file for configuring the database in container mode
+
+- name: Ensure runc is installed (Podman)
+  when: censhare_keycloak_container_engine == "podman"
+  become: true
+  ansible.builtin.dnf:
+    name: runc
+    state: present
+
+- name: Create /etc/containers directory if it doesn't exist (Podman)
+  when: censhare_keycloak_container_engine == "podman"
+  become: true
+  ansible.builtin.file:
+    path: /etc/containers
+    state: directory
+    mode: '0755'
+
+- name: Configure Podman to use runc as the default runtime (Podman)
+  when: censhare_keycloak_container_engine == "podman"
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/containers/containers.conf
+    content: |
+      [engine]
+      runtime = "runc"
+    mode: '0644'
+
+- name: Determine if SELinux is enforcing
+  ansible.builtin.set_fact:
+    censhare_keycloak_selinux_enforcing: >-
+      {{ (ansible_selinux is defined)
+         and (ansible_selinux.status == 'enabled')
+         and (ansible_selinux.mode == 'enforcing') }}
+
+- name: "Create {{ censhare_keycloak_db_home_dir }}"
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_keycloak_db_home_dir }}"
+    state: directory
+    mode: "0700"
+
+- name: "Create {{ censhare_keycloak_db_data_dir }}"
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_keycloak_db_data_dir }}"
+    state: directory
+    mode: "0700"
+
+- name: Persist SELinux context for PGDATA directory
+  when: censhare_keycloak_selinux_enforcing | default(false)
+  become: true
+  community.general.sefcontext:
+    target: "{{ censhare_keycloak_db_data_dir }}(/.*)?"
+    setype: container_file_t
+    state: present
+
+- name: Apply SELinux context to PGDATA directory
+  when: censhare_keycloak_selinux_enforcing | default(false)
+  become: true
+  ansible.builtin.command: "restorecon -Rv {{ censhare_keycloak_db_data_dir }}"
+  register: censhare_keycloak_restorecon
+  changed_when: censhare_keycloak_restorecon.stdout is search('Relabeled')
+
+- name: "Pull the PSQL image (Podman)"
+  when: censhare_keycloak_container_engine == "podman"
+  become: true
+  containers.podman.podman_image:
+    name: docker.io/library/postgres
+    tag: "{{ censhare_keycloak_db_version }}-alpine"
+    state: present
+
+- name: "Pull the PSQL image (Docker)"
+  when: censhare_keycloak_container_engine == "docker"
+  become: true
+  community.docker.docker_image:
+    name: postgres
+    tag: "{{ censhare_keycloak_db_version }}-alpine"
+    source: pull
+    state: present
+
+- name: "Create Postgres quadlet using Podman"
+  when: censhare_keycloak_container_engine == "podman"
+  become: true
+  containers.podman.podman_container:
+    name: "{{ censhare_keycloak_db_container_name }}"
+    image: "postgres:{{ censhare_keycloak_db_version }}-alpine"
+    state: quadlet
+    quadlet_dir: "{{ censhare_keycloak_quadlet_dir }}"
+    quadlet_filename: "{{ censhare_keycloak_db_container_name }}"
+    network: keycloak
+    volumes:
+      - "{{ censhare_keycloak_db_data_dir }}:{{ censhare_keycloak_pgdata_path }}{{ ':Z' if censhare_keycloak_selinux_enforcing | default(false) else '' }}"
+    env:
+      POSTGRES_USER: "{{ censhare_keycloak_db_user }}"
+      POSTGRES_PASSWORD: "{{ censhare_keycloak_db_pass }}"
+      POSTGRES_DB: "{{ censhare_keycloak_db_name }}"
+      PGDATA: "{{ censhare_keycloak_pgdata_path }}"
+    quadlet_options:
+      - |
+        [Install]
+        WantedBy={{ censhare_keycloak_quadlet_wanted_by }}
+      - |
+        [Service]
+        Restart=always
+        RestartSec=5
+  notify: Restart keycloak database quadlet
+  no_log: true
+
+- name: "Ensure Postgres quadlet service is enabled (Podman)"
+  when: censhare_keycloak_container_engine == "podman"
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ censhare_keycloak_db_service_unit }}"
+    enabled: true
+    state: started
+
+- name: "Wait for Postgres quadlet container to be running"
+  when: censhare_keycloak_container_engine == "podman"
+  become: true
+  containers.podman.podman_container_info:
+    name:
+      - "{{ censhare_keycloak_db_container_name }}"
+  register: censhare_keycloak_db_container_podman
+  until: >
+    (censhare_keycloak_db_container_podman.containers | length) > 0 and
+    (censhare_keycloak_db_container_podman.containers[0].State.Running | default(false))
+  retries: 10
+  delay: 3
+
+- name: "Create Postgres container using Docker"
+  when: censhare_keycloak_container_engine == "docker"
+  become: true
+  community.docker.docker_container:
+    name: "{{ censhare_keycloak_db_container_name }}"
+    image: "postgres:{{ censhare_keycloak_db_version }}-alpine"
+    state: started
+    restart_policy: always
+    networks:
+      - name: keycloak
+    volumes:
+      - "{{ censhare_keycloak_db_data_dir }}:{{ censhare_keycloak_pgdata_path }}{{ ':Z' if censhare_keycloak_selinux_enforcing | default(false) else '' }}"
+    env:
+      POSTGRES_USER: "{{ censhare_keycloak_db_user }}"
+      POSTGRES_PASSWORD: "{{ censhare_keycloak_db_pass }}"
+      POSTGRES_DB: "{{ censhare_keycloak_db_name }}"
+      PGDATA: "{{ censhare_keycloak_pgdata_path }}"
+  register: censhare_keycloak_db_container_docker
+  no_log: true
+
+- name: "Debug Show container attributes"
+  when: censhare_keycloak_container_engine == "podman"
+  ansible.builtin.debug:
+    var: censhare_keycloak_db_container_podman
+    verbosity: 1
+
+- name: "Set DB Host for Podman"
+  when: censhare_keycloak_container_engine == "podman"
+  ansible.builtin.set_fact:
+    censhare_keycloak_db_host: "{{ censhare_keycloak_db_container_podman.containers[0].NetworkSettings.Networks.keycloak.IPAddress }}"
+
+- name: "Set DB Host for Docker"
+  when: censhare_keycloak_container_engine == "docker"
+  ansible.builtin.set_fact:
+    censhare_keycloak_db_host: "{{ censhare_keycloak_db_container_docker.container.NetworkSettings.Networks.keycloak.IPAddress }}"

@@ -1,0 +1,61 @@
+{{ ansible_managed | comment }}
+backend censhare_cloud_gateway
+    mode http
+    balance leastconn
+    cookie SESSION prefix nocache
+    http-response add-header Strict-Transport-Security max-age=31536000;\ includeSubdomains
+    http-response add-header X-Content-Type-Options nosniff
+    http-response add-header X-XSS-Protection 1;\ mode=block
+    http-response set-header X-Frame-Options SAMEORIGIN
+    http-response add-header Permissions-Policy "accelerometer=(), ambient-light-sensor=(), autoplay=(), camera=(), display-capture=(), document-domain=(), fullscreen=(self), execution-while-not-rendered=(), execution-while-out-of-viewport=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials=(), sync-xhr=(), usb=(), wake-lock=()"
+
+    # Forwarded headers for backend
+    http-request set-header X-Forwarded-Port %[dst_port]
+    http-request add-header X-Forwarded-Proto https if { ssl_fc }
+    http-request add-header X-Forwarded-For %[src]
+
+    option http-server-close
+    option forwardfor
+
+    option httpchk GET /censhare5/client/img/favicon.ico?auth=standard
+    http-check expect status 200,302
+    default-server inter 1s downinter 3s rise 15 fall 15
+    timeout check 1s
+    timeout client {{ censhare_proxy_cgw_client_timeout }}
+    timeout server {{ censhare_proxy_cgw_server_timeout }}
+    option tcpka
+
+{% for backend in censhare_proxy_backends_cgw %}
+    server {{ backend.name }} {{ backend.address }}:{{ censhare_proxy_cgw_port }} check cookie {{ backend.name }}
+{% endfor %}
+
+{% if censhare_proxy_backends_cgw | length > 1 %}
+{% for backend in censhare_proxy_backends_cgw %}
+backend {{ backend.name }}
+    mode http
+    balance leastconn
+    http-response add-header Strict-Transport-Security max-age=31536000;\ includeSubdomains
+    http-response add-header X-Content-Type-Options nosniff
+    http-response add-header X-XSS-Protection 1;\ mode=block
+    http-response set-header X-Frame-Options SAMEORIGIN
+    http-response add-header Permissions-Policy "accelerometer=(), ambient-light-sensor=(), autoplay=(), camera=(), display-capture=(), document-domain=(), fullscreen=(self), execution-while-not-rendered=(), execution-while-out-of-viewport=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials=(), sync-xhr=(), usb=(), wake-lock=()"
+
+    # Forwarded headers for backend
+    http-request set-header X-Forwarded-Port %[dst_port]
+    http-request add-header X-Forwarded-Proto https if { ssl_fc }
+    http-request add-header X-Forwarded-For %[src]
+
+    option http-server-close
+    option forwardfor
+
+    option httpchk GET /censhare5/client/img/favicon.ico?auth=standard
+    http-check expect status 200,302
+    default-server inter 1s downinter 3s rise 15 fall 15
+    timeout check 1s
+    timeout client {{ censhare_proxy_cgw_client_timeout }}
+    timeout server {{ censhare_proxy_cgw_server_timeout }}
+    option tcpka
+
+    server {{ backend.name }} {{ backend.address }}:{{ censhare_proxy_cgw_port }} check
+{% endfor %}
+{% endif %}

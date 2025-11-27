@@ -1,0 +1,152 @@
+---
+# Variables for Software versions
+censhare_server_version: "2023.1.2"
+censhare_server_cgw_version: "3.1.9-1"
+censhare_server_srs_version: "3.0.5-1"
+censhare_server_version_parts: "{{ censhare_server_version | split('.') }}"
+censhare_server_major_version: "{{ censhare_server_version_parts[0] }}"
+censhare_server_minor_version: "{{ censhare_server_version_parts[1] }}"
+censhare_server_majmin_version: "{{ censhare_server_major_version }}.{{ censhare_server_minor_version }}"
+censhare_server_css_id: "master"
+censhare_server_remote_server: false
+censhare_server_master_server: "master-server"
+censhare_server_master_server_delegate: "{{ censhare_server_master_server }}"
+
+# Variables for Repository Setup
+censhare_server_repo_user: ""
+censhare_server_repo_pass: ""
+censhare_server_repo_host: "rpm.censhare.com"
+censhare_server_repo_gpg_url: "https://{{ censhare_server_repo_user }}:{{ censhare_server_repo_pass }}\
+  @{{ censhare_server_repo_host }}/public/6CAE093C.pub"
+censhare_server_repo_path: "censhare-release-rpm/stable/censhare/"
+censhare_server_repo_url: "https://{{ censhare_server_repo_user }}:{{ censhare_server_repo_pass }}\
+  @{{ censhare_server_repo_host }}/{{ censhare_server_repo_path }}\
+  {{ censhare_server_major_version }}/{{ censhare_server_minor_version }}/"
+censhare_server_tools_repo_path: "tools-release-rpm/"
+censhare_server_tools_repo_url: "https://{{ censhare_server_repo_user }}:{{ censhare_server_repo_pass }}\
+  @{{ censhare_server_repo_host }}/{{ censhare_server_tools_repo_path }}"
+
+# Variables for launcher configuration
+censhare_server_jvm: "10g"
+censhare_server_jvm_min: "{{ censhare_server_jvm }}"
+censhare_server_jvm_max: "{{ censhare_server_jvm }}"
+censhare_server_allowed_origins: "localhost:8082"
+
+# Variables for server configuration
+censhare_server_locale_default: "en"
+censhare_server_locales:
+  - "en"
+  - "de"
+censhare_server_allowed_invalid_logins: 3
+censhare_server_password_expire_days: 365
+censhare_server_custom_truststore: "false"
+censhare_server_rmi_keystore_alias: "localhost.censhare.com"
+
+# Variables for Database configuration
+censhare_server_db_host: "localhost"
+censhare_server_db_port: "5432"
+censhare_server_db_name: "corpus"
+censhare_server_db_user: "corpus"
+censhare_server_db_pass: "corpus"
+censhare_server_db_url: "jdbc:postgresql://{{ censhare_server_db_host }}:{{ censhare_server_db_port }}/{{ censhare_server_db_name }}"
+
+# Variables for filesystem configuration
+censhare_server_filesystems: []
+## Example: This will overwrite existing assets, archive and interfaces entries, so add them here as well
+# censhare_server_filesystems:
+#   - name: assets
+#     usage: assets
+#     mount: nfs
+#     src: "10.31.152.81:/srv/csproduction/assets"
+#     dest: "/asset"
+#   - name: archive
+#     usage: archive
+#     mount: nfs
+#     src: "10.31.152.81:/srv/csarchive/extarchive"
+#     dest: "/opt/corpus/work/extarchive"
+#   - name: interfaces
+#     usage: other
+#     mount: nfs
+#     src: "10.31.152.81:/srv/csproduction/interfaces"
+#     dest: "/opt/corpus/work/interfaces"
+
+# Variables to configure Webpack components
+censhare_server_keycloak_domain: "censhare-auth.example.com"
+censhare_server_keycloak_uri: "https://{{ censhare_server_keycloak_domain }}/auth"
+censhare_server_keycloak_realm: "censhare"
+censhare_server_keycloak_svc_user: "keycloak-service"
+censhare_server_keycloak_svc_pass: "PASSWORD"
+censhare_server_keycloak_client_id: "censhare5"
+censhare_server_keycloak_client_name: "censhare 5 OpenID client"
+censhare_server_keycloak_client_secret: "195c1ea2-9748-4bca-91b3-8aa6896362bc"
+censhare_server_keycloak_desktop_id: "desktop-app"
+censhare_server_keycloak_desktop_secret: "195c1ea2-9748-4bca-91b3-8aa6896362bc"
+censhare_server_host_port: "localhost:9000"
+censhare_server_srs_host_port: "localhost:8081"
+censhare_server_srs_deploy_webpack_artifact: true
+censhare_server_static_resource_server_webpack_artifact_url: "https://\
+  {{ censhare_server_repo_host }}/artifactory/webpack-release/\
+  {{ censhare_server_version }}/webpack-{{ censhare_server_version }}.tar.gz"
+# for custom brandings to /censhare5/client backend
+censhare_server_cgw_default_branding:
+  name: censhare5
+  path: /censhare5/client
+censhare_server_cgw_custom_brandings: []
+# e.g.
+# censhare_server_cgw_custom_brandings:
+#   - name: foobar
+#     path: /foo/bar
+censhare_server_cgw_brandings: "{{ [censhare_server_cgw_default_branding] + censhare_server_cgw_custom_brandings }}"
+
+# Variables to configure censhare mail accounts
+censhare_server_mail_enabled: false
+censhare_server_mail_store_protocol: "pop3"
+censhare_server_mail_send_protocol: "smtp"
+censhare_server_mail_from: "censhare-Server<corpus@censhare.com>"
+censhare_server_mail_host: "mail.censhare.com"
+censhare_server_mail_user: "corpus"
+censhare_server_mail_pass: "corpus"
+censhare_server_mail_smtp_port: "25"
+censhare_server_mail_use_store: false
+censhare_server_mail_use_send: true
+censhare_server_mail_user_pop3: "{{ censhare_server_mail_user if censhare_server_mail_use_store else '' }}"
+censhare_server_mail_user_smtp: "{{ censhare_server_mail_user if censhare_server_mail_use_send else '' }}"
+censhare_server_mail_pass_pop3: "{{ censhare_server_mail_pass if censhare_server_mail_use_store else '' }}"
+censhare_server_mail_pass_smtp: "{{ censhare_server_mail_pass if censhare_server_mail_use_send else '' }}"
+censhare_server_mail_host_pop3: "{{ censhare_server_mail_host if censhare_server_mail_use_store else '' }}"
+censhare_server_mail_host_smtp: "{{ censhare_server_mail_host if censhare_server_mail_use_send else '' }}"
+censhare_server_mail_auth: false
+censhare_server_mail_debug: false
+censhare_server_mail_connectiontimeout: 5000
+censhare_server_mail_timeout: 30000
+censhare_server_mail_connectiontimeout_pop3: "{{ censhare_server_mail_connectiontimeout if censhare_server_mail_use_store else '' }}"
+censhare_server_mail_connectiontimeout_smtp: "{{ censhare_server_mail_connectiontimeout if censhare_server_mail_use_send else '' }}"
+censhare_server_mail_timeout_pop3: "{{ censhare_server_mail_timeout if censhare_server_mail_use_store else '' }}"
+censhare_server_mail_timeout_smtp: "{{ censhare_server_mail_timeout if censhare_server_mail_use_send else '' }}"
+censhare_server_mail_accounts:
+  - name: "corpus"
+    store: "{{ censhare_server_mail_store_protocol }}"
+    trans: "{{ censhare_server_mail_send_protocol }}"
+    properties:
+      mail.from: "{{ censhare_server_mail_from }}"
+      mail.pop3.host: "{{ censhare_server_mail_host_pop3 }}"
+      mail.pop3.user: "{{ censhare_server_mail_user_pop3 }}"
+      mail.pop3.password: "{{ censhare_server_mail_pass_pop3 }}"
+      mail.pop3.connectiontimeout: "{{ censhare_server_mail_connectiontimeout_pop3 }}"
+      mail.pop3.timeout: "{{ censhare_server_mail_timeout_pop3 }}"
+      mail.smtp.host: "{{ censhare_server_mail_host_smtp }}"
+      mail.smtp.user: "{{ censhare_server_mail_user_smtp if censhare_server_mail_auth else '' }}"
+      mail.smtp.password: "{{ censhare_server_mail_pass_smtp if censhare_server_mail_auth else '' }}"
+      mail.smtp.port: "{{ censhare_server_mail_smtp_port }}"
+      mail.smtp.ssl.enable: "{{ censhare_server_mail_smtp_ssl_enable | default('') }}"
+      mail.smtp.starttls.enable: "{{ censhare_server_mail_smtp_startssl_enable | default('') }}"
+      mail.smtp.starttls.required: "{{ censhare_server_mail_smtp_startssl_required | default('') }}"
+      mail.smtp.auth: "{{ censhare_server_mail_auth }}"
+      mail.smtp.connectiontimeout: "{{ censhare_server_mail_connectiontimeout_smtp }}"
+      mail.smtp.timeout: "{{ censhare_server_mail_timeout_smtp }}"
+      mail.debug: "{{ censhare_server_mail_debug }}"
+
+# Variables to setup certbot
+censhare_server_certbot_enabled: false
+censhare_server_acme_directory: "{{ censhare_server_acme_directory_live }}"
+censhare_server_fqdn: "censhare.example.com"
