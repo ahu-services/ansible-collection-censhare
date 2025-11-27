@@ -15,7 +15,7 @@ galaxy_info:
   # - Apache-2.0
   # - CC-BY-4.0
   license: MIT
-  min_ansible_version: "2.14"
+  min_ansible_version: "2.18"
   platforms:
     - name: EL
       versions:

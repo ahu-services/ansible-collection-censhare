@@ -4,7 +4,7 @@ This collection, `ahu_services.censhare`, provides a set of Ansible roles for in
 
 ## Requirements
 
-- Ansible 2.14 or higher.
+- Ansible 2.18 or higher.
 - A Red Hat-compatible Linux distribution (e.g., RHEL, CentOS, Rocky Linux) for the target hosts.
 
 ## Installation
@@ -80,9 +80,13 @@ Here is a basic example of how to use the roles in this collection to set up a c
         censhare_sclient_svc_host: "censhare.example.com"
 ```
 
+## Testing
+
+Molecule suites were removed to reduce maintenance overhead; no automated integration tests are currently shipped with the collection.
+
 ## License
 
-This collection is licensed under the BSD License. See the `LICENSE` file for more details.
+This collection is licensed under the MIT License. See the `LICENSE` file for more details.
 
 ## Author Information
 

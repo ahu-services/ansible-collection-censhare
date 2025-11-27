@@ -4,7 +4,7 @@ This Ansible role installs and configures HAProxy for use in a censhare environm
 
 ## Requirements
 
-- Ansible 2.1 or higher.
+- Ansible 2.18 or higher.
 - Target hosts should be running a compatible Linux distribution with HAProxy available.
 
 ## Role Variables
@@ -71,7 +71,7 @@ Including an example of how to use your role (for instance, with variables passe
 License
 -------
 
-BSD
+MIT
 
 Author Information
 ------------------

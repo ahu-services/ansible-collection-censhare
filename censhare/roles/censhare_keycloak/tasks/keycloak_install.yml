@@ -93,6 +93,7 @@
            },
            {}
          ) }}
+  no_log: true
 
 - name: Determine Keycloak quadlet dependency targets
   when: container_engine == "podman"
@@ -132,6 +133,7 @@
         Restart=always
         RestartSec=10
   register: keycloak_quadlet_result
+  no_log: true
 
 - name: Ensure Keycloak quadlet service is enabled (Podman)
   when: container_engine == "podman"
@@ -156,6 +158,7 @@
     command: start
     env: "{{ censhare_keycloak_container_env }}"
     volumes: "{{ censhare_keycloak_container_volumes }}"
+  no_log: true
 
 - name: Wait for Keycloak to become available
   ansible.builtin.wait_for:

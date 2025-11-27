@@ -28,11 +28,12 @@
       password: "{{ realm.smtp_pass if realm.smtp_pass | length > 0 else omit }}"
       from: "{{ realm.smtp_from }}"
       fromDisplayName: "{{ realm.smtp_from_display_name }}"
-      replyTo: "{{ realm.smtp_reply_to }}"
+    replyTo: "{{ realm.smtp_reply_to }}"
   loop: "{{ censhare_keycloak_realms }}"
   loop_control:
     loop_var: realm
   tags: keycloak_setup
+  no_log: true
 - name: Create realm admin for censhare realm
   community.general.keycloak_user:
     auth_keycloak_url: "{{ censhare_keycloak_hostname_url }}"
@@ -55,6 +56,7 @@
   loop_control:
     loop_var: realm
   tags: keycloak_setup
+  no_log: true
 - name: Create or update censhare5 client in keycloak
   become: false
   community.general.keycloak_client:
@@ -142,6 +144,7 @@
   loop_control:
     loop_var: realm
   tags: keycloak_setup
+  no_log: true
 - name: Create or update desktop-app client in keycloak
   vars:
     realm: "{{ item }}"
@@ -208,3 +211,4 @@
   loop_control:
     loop_var: realm
   tags: keycloak_setup
+  no_log: true

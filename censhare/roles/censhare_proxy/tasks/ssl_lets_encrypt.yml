@@ -40,6 +40,7 @@
 - name: Set ACME thumbprint fact
   ansible.builtin.set_fact:
     censhare_proxy_ssl_thumbprint: "{{ censhare_proxy_ssl_acme_fingerprint | default('', true) }}"
+  no_log: true
 
 - name: Fail if ACME thumbprint missing
   ansible.builtin.fail:
@@ -65,12 +66,14 @@
   ansible.builtin.slurp:
     src: "/root/.acme.sh/{{ censhare_proxy_ssl_domain }}/{{ censhare_proxy_ssl_domain }}.key"
   register: censhare_proxy_le_key
+  no_log: true
 
 - name: Read issued fullchain
   become: true
   ansible.builtin.slurp:
     src: "/root/.acme.sh/{{ censhare_proxy_ssl_domain }}/fullchain.cer"
   register: censhare_proxy_le_fullchain
+  no_log: true
 
 - name: Install combined certificate for HAProxy
   become: true
@@ -82,3 +85,4 @@
     group: root
   notify:
     - Reload haproxy
+  no_log: true

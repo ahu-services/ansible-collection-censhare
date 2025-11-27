@@ -46,6 +46,7 @@
         force_basic_auth: true
         dest: "/tmp/{{ censhare_server_static_resource_server_webpack_artifact_url | basename }}"
         mode: "0664"
+      no_log: true
       tags:
         - css_webpack_config
 

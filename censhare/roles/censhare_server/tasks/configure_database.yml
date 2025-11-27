@@ -45,3 +45,4 @@
     login_user: "{{ censhare_server_db_user }}"
     login_password: "{{ censhare_server_db_pass }}"
     path: "{{ censhare_server_create_schema_script }}"
+  no_log: true

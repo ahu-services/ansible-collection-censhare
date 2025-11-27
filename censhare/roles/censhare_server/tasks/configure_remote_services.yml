@@ -73,6 +73,7 @@
         friendly_name: system@remote-server
         passphrase: corpus
         state: present
+      no_log: true
 
     - name: Remote Setup | Import SSL certificate for system@remote-server to keystore
       become: true
@@ -86,6 +87,7 @@
         pkcs12_password: corpus
         pkcs12_alias: system@remote-server
         state: present
+      no_log: true
 
     - name: Remote Setup | set permissions to keystore
       become: true

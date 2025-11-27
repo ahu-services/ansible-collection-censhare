@@ -111,3 +111,4 @@
     certificate_path: "{{ censhare_keycloak_tls_certificate_path }}"
     passphrase: "{{ censhare_keycloak_tls_keystore_password }}"
     mode: "0640"
+  no_log: true

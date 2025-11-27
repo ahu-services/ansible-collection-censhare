@@ -105,6 +105,7 @@
         Restart=always
         RestartSec=5
   notify: Restart keycloak database quadlet
+  no_log: true
 
 - name: "Ensure Postgres quadlet service is enabled (Podman)"
   when: container_engine == "podman"
@@ -145,6 +146,7 @@
       POSTGRES_DB: "{{ censhare_keycloak_db_name }}"
       PGDATA: "{{ censhare_keycloak_pgdata_path }}"
   register: keycloak_db_container_docker
+  no_log: true
 
 - name: "Debug Show container attributes"
   when: container_engine == "podman"

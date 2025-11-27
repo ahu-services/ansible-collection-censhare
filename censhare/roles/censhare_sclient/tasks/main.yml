@@ -159,6 +159,7 @@
         RestartSec=5
         TimeoutStopSec=70
   notify: Restart service-client quadlet
+  no_log: true
 
 - name: Ensure service-client quadlet service is enabled
   become: true

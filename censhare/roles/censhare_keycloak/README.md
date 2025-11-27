@@ -7,7 +7,7 @@ This Ansible role installs and configures Keycloak as the authentication service
 
 ## Requirements
 
-- Ansible 2.16 or higher (matches the collection `requires_ansible` setting).
+- Ansible 2.18 or higher (matches the collection `requires_ansible` setting).
 - Target hosts should be running a compatible Linux distribution with Podman available. The role relies on Podman Quadlets (`state: quadlet`) when Keycloak or its bundled Postgres DB runs in containers.
 
 ## Role Variables
@@ -111,7 +111,7 @@ Including an example of how to use your role (for instance, with variables passe
 License
 -------
 
-BSD
+MIT
 
 Author Information
 ------------------
