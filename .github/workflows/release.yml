@@ -1,0 +1,31 @@
+name: Release to Galaxy
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ansible
+        run: pip install --upgrade ansible-core
+
+      - name: Build collection
+        working-directory: censhare
+        run: ansible-galaxy collection build
+
+      - name: Publish collection
+        working-directory: censhare
+        env:
+          GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
+        run: ansible-galaxy collection publish ./ahu_services-censhare-*.tar.gz --api-key "$GALAXY_API_KEY"
