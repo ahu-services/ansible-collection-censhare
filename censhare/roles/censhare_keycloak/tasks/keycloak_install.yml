@@ -9,7 +9,7 @@
     mode: "0755"
 
 - name: Pull the Keycloak image (Podman)
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   become: true
   containers.podman.podman_image:
     name: quay.io/keycloak/keycloak
@@ -17,7 +17,7 @@
     state: present
 
 - name: Pull the Keycloak image (Docker)
-  when: container_engine == "docker"
+  when: censhare_keycloak_container_engine == "docker"
   become: true
   community.docker.docker_image:
     name: quay.io/keycloak/keycloak
@@ -96,7 +96,7 @@
   no_log: true
 
 - name: Determine Keycloak quadlet dependency targets
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   ansible.builtin.set_fact:
     censhare_keycloak_quadlet_after: >-
       {{ (
@@ -108,7 +108,7 @@
          ) | join(' ') }}
 
 - name: Create Keycloak quadlet using Podman
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   become: true
   containers.podman.podman_container:
     name: "{{ censhare_keycloak_container_name }}"
@@ -132,20 +132,20 @@
         [Service]
         Restart=always
         RestartSec=10
-  register: keycloak_quadlet_result
+  register: censhare_keycloak_quadlet_result
   no_log: true
 
 - name: Ensure Keycloak quadlet service is enabled (Podman)
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   become: true
   ansible.builtin.systemd:
     name: "{{ censhare_keycloak_service_unit }}"
     enabled: true
-    state: "{{ 'restarted' if keycloak_quadlet_result.changed else 'started' }}"
-    daemon_reload: "{{ keycloak_quadlet_result.changed | default(false) | bool }}"
+    state: "{{ 'restarted' if censhare_keycloak_quadlet_result.changed else 'started' }}"
+    daemon_reload: "{{ censhare_keycloak_quadlet_result.changed | default(false) | bool }}"
 
 - name: Create Keycloak container using Docker
-  when: container_engine == "docker"
+  when: censhare_keycloak_container_engine == "docker"
   become: true
   community.docker.docker_container:
     name: "{{ censhare_keycloak_container_name }}"

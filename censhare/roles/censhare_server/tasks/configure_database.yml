@@ -40,8 +40,8 @@
     - '"An error occured: org.postgresql.util.PSQLException: ERROR: relation \"party\" does not exist" in censhare_server_db_status.stdout_lines'
   community.postgresql.postgresql_script:
     login_host: "{{ censhare_server_db_host }}"
-    port: "{{ censhare_server_db_port }}"
-    db: "{{ censhare_server_db_name }}"
+    login_port: "{{ censhare_server_db_port }}"
+    database: "{{ censhare_server_db_name }}"
     login_user: "{{ censhare_server_db_user }}"
     login_password: "{{ censhare_server_db_pass }}"
     path: "{{ censhare_server_create_schema_script }}"

@@ -2,14 +2,14 @@
 # tasks file for configuring the database in container mode
 
 - name: Ensure runc is installed (Podman)
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   become: true
   ansible.builtin.dnf:
     name: runc
     state: present
 
 - name: Create /etc/containers directory if it doesn't exist (Podman)
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   become: true
   ansible.builtin.file:
     path: /etc/containers
@@ -17,7 +17,7 @@
     mode: '0755'
 
 - name: Configure Podman to use runc as the default runtime (Podman)
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   become: true
   ansible.builtin.copy:
     dest: /etc/containers/containers.conf
@@ -63,7 +63,7 @@
   changed_when: censhare_keycloak_restorecon.stdout is search('Relabeled')
 
 - name: "Pull the PSQL image (Podman)"
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   become: true
   containers.podman.podman_image:
     name: docker.io/library/postgres
@@ -71,7 +71,7 @@
     state: present
 
 - name: "Pull the PSQL image (Docker)"
-  when: container_engine == "docker"
+  when: censhare_keycloak_container_engine == "docker"
   become: true
   community.docker.docker_image:
     name: postgres
@@ -80,7 +80,7 @@
     state: present
 
 - name: "Create Postgres quadlet using Podman"
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   become: true
   containers.podman.podman_container:
     name: "{{ censhare_keycloak_db_container_name }}"
@@ -108,7 +108,7 @@
   no_log: true
 
 - name: "Ensure Postgres quadlet service is enabled (Podman)"
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   become: true
   ansible.builtin.systemd:
     name: "{{ censhare_keycloak_db_service_unit }}"
@@ -116,20 +116,20 @@
     state: started
 
 - name: "Wait for Postgres quadlet container to be running"
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   become: true
   containers.podman.podman_container_info:
     name:
       - "{{ censhare_keycloak_db_container_name }}"
-  register: keycloak_db_container_podman
+  register: censhare_keycloak_db_container_podman
   until: >
-    (keycloak_db_container_podman.containers | length) > 0 and
-    (keycloak_db_container_podman.containers[0].State.Running | default(false))
+    (censhare_keycloak_db_container_podman.containers | length) > 0 and
+    (censhare_keycloak_db_container_podman.containers[0].State.Running | default(false))
   retries: 10
   delay: 3
 
 - name: "Create Postgres container using Docker"
-  when: container_engine == "docker"
+  when: censhare_keycloak_container_engine == "docker"
   become: true
   community.docker.docker_container:
     name: "{{ censhare_keycloak_db_container_name }}"
@@ -145,21 +145,21 @@
       POSTGRES_PASSWORD: "{{ censhare_keycloak_db_pass }}"
       POSTGRES_DB: "{{ censhare_keycloak_db_name }}"
       PGDATA: "{{ censhare_keycloak_pgdata_path }}"
-  register: keycloak_db_container_docker
+  register: censhare_keycloak_db_container_docker
   no_log: true
 
 - name: "Debug Show container attributes"
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   ansible.builtin.debug:
-    var: keycloak_db_container_podman
+    var: censhare_keycloak_db_container_podman
     verbosity: 1
 
 - name: "Set DB Host for Podman"
-  when: container_engine == "podman"
+  when: censhare_keycloak_container_engine == "podman"
   ansible.builtin.set_fact:
-    censhare_keycloak_db_host: "{{ keycloak_db_container_podman.containers[0].NetworkSettings.Networks.keycloak.IPAddress }}"
+    censhare_keycloak_db_host: "{{ censhare_keycloak_db_container_podman.containers[0].NetworkSettings.Networks.keycloak.IPAddress }}"
 
 - name: "Set DB Host for Docker"
-  when: container_engine == "docker"
+  when: censhare_keycloak_container_engine == "docker"
   ansible.builtin.set_fact:
-    censhare_keycloak_db_host: "{{ keycloak_db_container_docker.container.NetworkSettings.Networks.keycloak.IPAddress }}"
+    censhare_keycloak_db_host: "{{ censhare_keycloak_db_container_docker.container.NetworkSettings.Networks.keycloak.IPAddress }}"

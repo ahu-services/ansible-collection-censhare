@@ -16,7 +16,7 @@
     - name: Get id_rsa.pub
       ansible.builtin.slurp:
         src: "~/.ssh/id_rsa.pub"
-      register: pubkey
+      register: censhare_server_pubkey
       changed_when: false
 
 - name: Remote Setup | Copy SSH key to current remote
@@ -24,7 +24,7 @@
   ansible.posix.authorized_key:
     user: corpus
     state: present
-    key: "{{ pubkey.content | b64decode }}"
+    key: "{{ censhare_server_pubkey.content | b64decode }}"
   when: censhare_server_css_id != 'master'
 
 - name: Remote Setup | Create keystore
@@ -127,4 +127,4 @@
     rsync_path: "/bin/rsync"
     rsync_opts:
       - "--prune-empty-dirs"
-  register: remote_sync
+  register: censhare_server_remote_sync
