@@ -1,4 +1,4 @@
-.ansible/.lock
+.ansible
 censhare/FILES.json
 censhare/*.tar.gz
 censhare/*.tgz
