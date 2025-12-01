@@ -130,6 +130,7 @@
           jsonType.label: String
     default_client_scopes:
       - web-origins
+      - basic
       - acr
       - profile
       - roles
@@ -198,6 +199,7 @@
     node_re_registration_timeout: -1
     default_client_scopes:
       - web-origins
+      - basic
       - profile
       - roles
       - email

@@ -5,3 +5,6 @@ censhare/*.tgz
 censhare/*.zip
 Pipfile
 Pipfile.lock
+.vscode/
+settings.json
+.DS_Store
