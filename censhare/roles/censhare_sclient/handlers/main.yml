@@ -19,5 +19,6 @@
 
 - name: Reload firewalld
   become: true
-  ansible.posix.firewalld:
+  ansible.builtin.systemd:
+    name: firewalld
     state: reloaded
