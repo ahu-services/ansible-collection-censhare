@@ -14,8 +14,10 @@ censhare_sclient_collabora_extra_params: "--o:ssl.enable=false"
 censhare_sclient_container_network: censhare
 censhare_sclient_direct_volumes: false
 censhare_sclient_instances: 4
-censhare_sclient_svc_name: service-client
-censhare_sclient_collabora_name: collabora
+censhare_sclient_svc_appendix: ""
+censhare_sclient_collabora_appendix: "{{ censhare_sclient_svc_appendix }}"
+censhare_sclient_svc_name: "service-client{{ censhare_sclient_svc_appendix }}"
+censhare_sclient_collabora_name: "collabora{{ censhare_sclient_collabora_appendix }}"
 censhare_sclient_office_url: "http://localhost:9980/cool/convert-to/pdf"
 censhare_sclient_service_unit: "{{ censhare_sclient_svc_name }}.service"
 censhare_sclient_collabora_service_unit: "{{ censhare_sclient_collabora_name }}.service"

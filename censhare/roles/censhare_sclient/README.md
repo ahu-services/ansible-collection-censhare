@@ -36,7 +36,9 @@ Service Client configuration:
 - `censhare_sclient_svc_host` (default `censhare-hostname`)
 - `censhare_sclient_office_url` (default `http://localhost:9980/cool/convert-to/pdf`)
 - `censhare_sclient_instances` (default `4`)
-- `censhare_sclient_svc_name` / `censhare_sclient_collabora_name` (Quadlet names; defaults `service-client` / `collabora`)
+- `censhare_sclient_svc_appendix` (default `""`) optional suffix appended to all service-client resources when you run multiple stacks on one host
+- `censhare_sclient_collabora_appendix` (default `{{ censhare_sclient_svc_appendix }}`) optional suffix for Collabora resources; inherits the service-client suffix by default
+- `censhare_sclient_svc_name` / `censhare_sclient_collabora_name` (Quadlet names; defaults `service-client{{ censhare_sclient_svc_appendix }}` / `collabora{{ censhare_sclient_collabora_appendix }}`)
 
 Host integration:
 - `censhare_sclient_quadlet_dir` (default `/etc/containers/systemd`)
