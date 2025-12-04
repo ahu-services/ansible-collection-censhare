@@ -46,10 +46,11 @@ Host integration:
 - `censhare_sclient_quadlet_dir` (default `/etc/containers/systemd`)
 - `censhare_sclient_quadlet_wanted_by` (default `multi-user.target`)
 - `censhare_sclient_service_unit` / `censhare_sclient_collabora_service_unit` (systemd unit names; default `{{ name }}.service`)
-- `censhare_sclient_container_network` (default `censhare`) used for Collabora
+- `censhare_sclient_container_network` (default `censhare{{ censhare_sclient_svc_appendix }}`) used for Collabora and service-client
 - `censhare_sclient_firewalld_service` (default `censhare-service-client{{ censhare_sclient_svc_appendix }}`) firewalld service name for the callback port; opened automatically when firewalld is running
-- `censhare_sclient_iccprofiles_dir` (default `/opt/iccprofiles`) mounted read-only into the service-client container
-- `censhare_sclient_volumes` and `censhare_sclient_volumes_info` (see `defaults/main.yml`) are provided for downstream consumers of the image metadata
+- `censhare_sclient_iccprofiles_dir` (default `/opt/iccprofiles`) mounted read-only into the service-client container (with `:Z` when SELinux enforcing)
+- `censhare_sclient_volumes` (default `[]`) optional host bind mounts added to the service-client container; `:Z` is appended automatically when SELinux is enforcing and no label is present
+- `censhare_sclient_volumes_info` (default `{}`) forwarded as the container env `VOLUMES_INFO` to rewrite `hosts.xml` volume metadata when you mount storage
 
 Networking: the service-client now runs in bridge mode on `{{ censhare_sclient_container_network }}`, publishes `{{ censhare_sclient_rmi_port }}` to the host, and rewrites the RMI stub using `censhare_sclient_callback_host`. Firewalld is adjusted when running to keep only the current port open.
 

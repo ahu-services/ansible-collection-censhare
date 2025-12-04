@@ -180,6 +180,34 @@
   tags:
     - css_update
 
+- name: Initialize service-client volume list
+  ansible.builtin.set_fact:
+    censhare_sclient_extra_volumes: []
+
+- name: Add configured volumes for service-client
+  ansible.builtin.set_fact:
+    censhare_sclient_extra_volumes: >-
+      {{
+        censhare_sclient_extra_volumes
+        + [
+          item
+          + (
+            ':Z'
+            if (censhare_sclient_selinux_enforcing | default(false))
+            and not (item | regex_search(':[^:]*:[zZ]') or item | regex_search(':[zZ]$'))
+            else ''
+          )
+        ]
+      }}
+  loop: "{{ censhare_sclient_volumes | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Render VOLUMES_INFO payload when provided
+  ansible.builtin.set_fact:
+    censhare_sclient_volumes_info_json: "{{ censhare_sclient_volumes_info | to_json }}"
+  when: censhare_sclient_volumes_info | length > 0
+
 - name: Configure service-client quadlet
   become: true
   containers.podman.podman_container:
@@ -202,9 +230,13 @@
       OFFICE_URL: "{{ censhare_sclient_office_url }}"
       SERVICECLIENT_RMI_PORT: "{{ censhare_sclient_rmi_port | string }}"
       SERVICECLIENT_CALLBACK_HOST: "{{ censhare_sclient_callback_host }}"
+      VOLUMES_INFO: "{{ censhare_sclient_volumes_info_json | default(omit) }}"
       FFMPEG_TIMEOUT: "1800"
-    volumes:
-      - "{{ censhare_sclient_iccprofiles_dir }}:/iccprofiles{{ ':Z' if censhare_sclient_selinux_enforcing | default(false) else '' }}"
+    volumes: >-
+      {{
+        [censhare_sclient_iccprofiles_dir ~ ':/iccprofiles' ~ (':Z' if censhare_sclient_selinux_enforcing | default(false) else '')]
+        + (censhare_sclient_extra_volumes | default([]))
+      }}
     quadlet_options:
       - |
         [Install]
