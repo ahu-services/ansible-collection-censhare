@@ -115,6 +115,8 @@
     mode: '0644'
     owner: "corpus"
     group: "corpus"
+  tags:
+    - css_update
 
 - name: Synchronize xml configs to remote
   delegate_to: "{{ censhare_server_master_server_delegate }}"
@@ -128,3 +130,5 @@
     rsync_opts:
       - "--prune-empty-dirs"
   register: censhare_server_remote_sync
+  tags:
+    - css_update

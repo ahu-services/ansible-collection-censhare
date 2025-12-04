@@ -6,6 +6,7 @@
   when: censhare_server_repo_user == "" or censhare_server_repo_pass == ""
   tags:
     - css_install
+    - css_update
     - css_webpack_config
 
 - name: Gather package facts

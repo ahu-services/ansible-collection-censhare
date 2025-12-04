@@ -72,7 +72,15 @@ See `roles/censhare_server/defaults/main.yml` for the full list.
     - ahu_services.censhare.censhare_server
 ```
 
-Useful tags: `css_install`, `css_server_config`, `css_database_config`, `css_services_config`, `css_webpack_config`.
+## Tags
+
+- `css_install` – repo wiring and package installation steps. Use for a fresh install or when updating RPMs.
+- `css_server_config` – renders launcher/server XML and related server-level config.
+- `css_database_config` – database XML templating and DB checks.
+- `css_services_config` – service XML generation (filesystem, Keycloak, mail) and supporting filesystem layout.
+- `css_webpack_config` – CGW/SRS templating and webpack artifact deployment.
+- `css_update` – idempotent steps that should run on update cycles (RPM updates and config template refresh). Assumes an initial install already created required directories and prerequisites.
+- `keycloak_setup` (other role) – applies Keycloak realm/user/client configuration.
 
 ## License
 

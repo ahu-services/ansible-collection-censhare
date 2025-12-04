@@ -11,6 +11,7 @@
   notify: Restart Cloud Gateway
   tags:
     - css_webpack_config
+    - css_update
 
 - name: "Configure Webpack Components | Configure censhare Static Resource Server"
   become: true
@@ -23,6 +24,7 @@
   notify: Restart Static Resource Server
   tags:
     - css_webpack_config
+    - css_update
 
 - name: Configure Webpack Components | Ensure /opt/webpack directory exists
   become: true
@@ -49,6 +51,7 @@
       no_log: true
       tags:
         - css_webpack_config
+        - css_update
 
     - name: Configure Webpack Components | Unpack webpack artifact to destination directory
       become: true
@@ -61,6 +64,7 @@
       when: not ansible_check_mode
       tags:
         - css_webpack_config
+        - css_update
 
 - name: Configure Webpack Components | Start and enable Cloud Gateway
   become: true
@@ -70,6 +74,7 @@
     enabled: true
   tags:
     - css_webpack_config
+    - css_update
 
 - name: Configure Webpack Components | Start and enable Static Resource Server
   become: true
@@ -79,3 +84,4 @@
     enabled: true
   tags:
     - css_webpack_config
+    - css_update
