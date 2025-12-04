@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: ansible-lint
         name: ansible-lint
-        entry: bash -c "cd censhare && ansible-lint"
+        entry: bash -c "cd censhare && ansible-lint --exclude .ansible"
         language: system
         pass_filenames: false
       - id: ansible-test-sanity
