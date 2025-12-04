@@ -16,3 +16,8 @@
     state: restarted
   tags:
     - css_update
+
+- name: Reload firewalld
+  become: true
+  ansible.posix.firewalld:
+    state: reloaded

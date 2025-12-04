@@ -126,11 +126,10 @@
         <port protocol="tcp" port="{{ censhare_sclient_rmi_port }}"/>
       </service>
   when: censhare_sclient_firewalld_active | default(false)
+  notify: Reload firewalld
 
-- name: Reload firewalld to pick up service definition
-  become: true
-  ansible.builtin.command: firewall-cmd --reload
-  changed_when: false
+- name: Apply firewalld changes before opening service
+  ansible.builtin.meta: flush_handlers
   when: censhare_sclient_firewalld_active | default(false)
 
 - name: Open service-client callback port in firewalld
