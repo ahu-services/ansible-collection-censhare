@@ -13,7 +13,8 @@
         mode: '0775'
       loop: "{{ censhare_server_filesystems }}"
       when: item.mount != "none"
-      tags: css_services_config
+      tags:
+        - css_services_config
 
     - name: Mount NFS filesystems
       become: true
@@ -25,7 +26,8 @@
         state: mounted
       loop: "{{ censhare_server_filesystems }}"
       when: item.mount == "nfs"
-      tags: css_services_config
+      tags:
+        - css_services_config
 
     - name: Create symlink for mounted filesystems
       become: true
@@ -39,7 +41,8 @@
       when:
         - item.mount != "none"
         - item.dest != "/opt/corpus/work/" + item.name
-      tags: css_services_config
+      tags:
+        - css_services_config
 
     - name: Create temp directory for asset usage
       become: true
@@ -53,7 +56,8 @@
       when:
         - item.usage == "assets"
         - item.mount != "none"
-      tags: css_services_config
+      tags:
+        - css_services_config
 
     - name: Create symlink for temp directory for asset usage
       become: true
@@ -67,7 +71,8 @@
       when:
         - item.usage == "assets"
         - item.mount != "none"
-      tags: css_services_config
+      tags:
+        - css_services_config
 
     - name: Create directory for non-mounted filesystems
       become: true
@@ -80,7 +85,8 @@
       loop: "{{ censhare_server_filesystems }}"
       when:
         - item.mount == "none"
-      tags: css_services_config
+      tags:
+        - css_services_config
 
     - name: "Configure Filesystem Service | Create custom filesystem directory"
       become: true
@@ -90,7 +96,8 @@
         mode: '0755'
         owner: "corpus"
         group: "corpus"
-      tags: css_services_config
+      tags:
+        - css_services_config
 
     - name: "Configure Filesystem Service | Create custom filesystem config"
       delegate_to: "{{ censhare_server_master_server_delegate }}"
@@ -101,7 +108,9 @@
         mode: '0644'
         owner: "corpus"
         group: "corpus"
-      tags: css_services_config
+      tags:
+        - css_services_config
+        - css_update
 
 - name: "Configure Keycloak Service"
   tags: css_services_config
@@ -114,7 +123,8 @@
         mode: '0755'
         owner: "corpus"
         group: "corpus"
-      tags: css_services_config
+      tags:
+        - css_services_config
 
     - name: "Configure Keycloak Service | Create custom Keycloak config"
       delegate_to: "{{ censhare_server_master_server_delegate }}"
@@ -125,8 +135,9 @@
         mode: '0644'
         owner: "corpus"
         group: "corpus"
-      tags: css_services_config
-
+      tags:
+        - css_services_config
+        - css_update
 
 - name: "Configure Mail Service"
   when: "censhare_server_mail_enabled"
@@ -140,7 +151,8 @@
         mode: '0755'
         owner: "corpus"
         group: "corpus"
-      tags: css_services_config
+      tags:
+        - css_services_config
 
     - name: "Configure Mail Service | Create custom mail config"
       delegate_to: "{{ censhare_server_master_server_delegate }}"
@@ -151,4 +163,6 @@
         mode: '0644'
         owner: "corpus"
         group: "corpus"
-      tags: css_services_config
+      tags:
+        - css_services_config
+        - css_update

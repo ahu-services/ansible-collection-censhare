@@ -82,6 +82,8 @@
     name: "{{ censhare_sclient_tools_image }}"
     tag: "{{ censhare_sclient_tools_version }}"
     state: present
+  tags:
+    - css_update
 
 - name: Pull the collabora image
   become: true
@@ -89,6 +91,8 @@
     name: "{{ censhare_sclient_collabora_image }}"
     tag: "{{ censhare_sclient_collabora_version }}"
     state: present
+  tags:
+    - css_update
 
 - name: Configure collabora quadlet
   become: true
@@ -116,6 +120,8 @@
         RestartSec=5
         TimeoutStopSec=70
   notify: Restart collabora quadlet
+  tags:
+    - css_update
 
 - name: Ensure collabora quadlet service is enabled
   become: true
@@ -124,6 +130,8 @@
     enabled: true
     state: started
     daemon_reload: true
+  tags:
+    - css_update
 
 - name: Configure service-client quadlet
   become: true
@@ -160,6 +168,8 @@
         TimeoutStopSec=70
   notify: Restart service-client quadlet
   no_log: true
+  tags:
+    - css_update
 
 - name: Ensure service-client quadlet service is enabled
   become: true
@@ -168,3 +178,5 @@
     enabled: true
     state: started
     daemon_reload: true
+  tags:
+    - css_update

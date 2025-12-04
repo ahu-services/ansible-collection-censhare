@@ -15,7 +15,7 @@ This role provisions the censhare Service Client stack on Red Hat compatible hos
 
 ## Requirements
 
-- Ansible 2.18 or newer (matches the collection metadata).
+- Ansible 2.15 or newer (matches the collection metadata).
 - EL8/EL9 compatible hosts with systemd.
 - A user with privileges to install packages, manage systemd units, and create Podman networks/containers.
 - Credentials for censhare registries if you pull protected images.

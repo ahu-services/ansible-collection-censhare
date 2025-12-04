@@ -7,7 +7,7 @@ This Ansible role installs and configures Keycloak as the authentication service
 
 ## Requirements
 
-- Ansible 2.18 or higher (matches the collection `requires_ansible` setting).
+- Ansible 2.15 or higher (matches the collection `requires_ansible` setting).
 - Target hosts should be running a compatible Linux distribution with Podman available. The role relies on Podman Quadlets (`state: quadlet`) when Keycloak or its bundled Postgres DB runs in containers.
 
 ## Role Variables
@@ -33,7 +33,7 @@ This Ansible role installs and configures Keycloak as the authentication service
 
 - `censhare_keycloak_realm`: Name of the default Keycloak realm. Default: `censhare`.
 - `censhare_keycloak_realms`: List of realm configuration dictionaries. The first (default) entry mirrors the legacy single variables, so existing inventories continue to work. Each entry supports `name`, `display_name`, `svc_user`, `svc_pass`, `client_secret`, `desktop_secret`, `smtp_host`, `smtp_user`, `smtp_pass`, `smtp_from`, `smtp_from_display_name`, `smtp_reply_to`, `smtp_port`, `smtp_starttls`, `smtp_ssl`, and `smtp_auth`.
-- `censhare_keycloak_realms_defaults`: Helper variable that contains the role’s default list. Reference it if you only want to append or extend the shipped configuration, e.g. `censhare_keycloak_realms: "{{ censhare_keycloak_realms_defaults + my_extra_realms }}"`.
+- `censhare_keycloak_realms_defaults`: Helper variable that contains the role's default list. Reference it if you only want to append or extend the shipped configuration, e.g. `censhare_keycloak_realms: "{{ censhare_keycloak_realms_defaults + my_extra_realms }}"`.
 
 ### Keycloak User Configuration
 

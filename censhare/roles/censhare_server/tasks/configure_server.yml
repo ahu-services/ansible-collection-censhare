@@ -21,6 +21,7 @@
     group: "corpus"
   tags:
     - css_server_config
+    - css_update
 
 - name: "Configure Server | Create custom server config"
   delegate_to: "{{ censhare_server_master_server_delegate }}"
@@ -33,3 +34,4 @@
     group: "corpus"
   tags:
     - css_server_config
+    - css_update
