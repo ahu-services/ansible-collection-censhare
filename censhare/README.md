@@ -7,6 +7,10 @@ This collection, `ahu_services.censhare`, provides a set of Ansible roles for in
 - Ansible 2.16 or higher.
 - A Red Hat-compatible Linux distribution (e.g., RHEL, CentOS, Rocky Linux) for the target hosts.
 
+## Defaults and version pinning
+
+Role defaults track the versions we test with when releasing the collection (e.g., censhare Server/CGW/SRS builds and the `cs-image-tools` container tag). These defaults are bumped on collection updates. Pin either the collection version in your requirements or override the version variables in your inventory to keep a stable toolchain in your environment.
+
 ## Installation
 
 To use this collection, install it from Ansible Galaxy:
