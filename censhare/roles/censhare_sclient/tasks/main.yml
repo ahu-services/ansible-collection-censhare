@@ -55,20 +55,21 @@
   ansible.builtin.set_fact:
     censhare_sclient_selinux_enforcing: "{{ (ansible_selinux is defined) and (ansible_selinux.status == 'enabled') and (ansible_selinux.mode == 'enforcing') }}"
 
-- name: Persist SELinux context for ICC profiles directory
+- name: Ensure SELinux context for ICC profiles directory
   when: censhare_sclient_selinux_enforcing | default(false)
-  become: true
-  community.general.sefcontext:
-    target: "{{ censhare_sclient_iccprofiles_dir }}(/.*)?"
-    setype: container_file_t
-    state: present
+  block:
+    - name: Persist SELinux context for ICC profiles directory
+      become: true
+      community.general.sefcontext:
+        target: "{{ censhare_sclient_iccprofiles_dir }}(/.*)?"
+        setype: container_file_t
+        state: present
 
-- name: Apply SELinux context to ICC profiles directory
-  when: censhare_sclient_selinux_enforcing | default(false)
-  become: true
-  ansible.builtin.command: "restorecon -Rv {{ censhare_sclient_iccprofiles_dir }}"
-  register: censhare_sclient_restorecon
-  changed_when: censhare_sclient_restorecon.stdout is search('Relabeled')
+    - name: Apply SELinux context to ICC profiles directory
+      become: true
+      ansible.builtin.command: "restorecon -Rv {{ censhare_sclient_iccprofiles_dir }}"
+      register: censhare_sclient_restorecon
+      changed_when: censhare_sclient_restorecon.stdout is search('Relabeled')
 
 - name: Gather service facts for firewall detection
   become: true
@@ -106,40 +107,39 @@
   tags:
     - css_update
 
-- name: Install firewall bindings when firewalld is active
-  become: true
-  ansible.builtin.dnf:
-    name: python3-firewall
-    state: present
+- name: Configure firewalld for service-client callback
   when: censhare_sclient_firewalld_active | default(false)
+  block:
+    - name: Install firewall bindings
+      become: true
+      ansible.builtin.dnf:
+        name: python3-firewall
+        state: present
 
-- name: Define firewalld service for censhare service-client
-  become: true
-  ansible.builtin.copy:
-    dest: "/etc/firewalld/services/{{ censhare_sclient_firewalld_service }}.xml"
-    mode: '0644'
-    content: |
-      <?xml version="1.0" encoding="utf-8"?>
-      <service>
-        <short>{{ censhare_sclient_firewalld_service }}</short>
-        <description>censhare Service Client callback port</description>
-        <port protocol="tcp" port="{{ censhare_sclient_rmi_port }}"/>
-      </service>
-  when: censhare_sclient_firewalld_active | default(false)
-  notify: Reload firewalld
+    - name: Define firewalld service for censhare service-client
+      become: true
+      ansible.builtin.copy:
+        dest: "/etc/firewalld/services/{{ censhare_sclient_firewalld_service }}.xml"
+        mode: '0644'
+        content: |
+          <?xml version="1.0" encoding="utf-8"?>
+          <service>
+            <short>{{ censhare_sclient_firewalld_service }}</short>
+            <description>censhare Service Client callback port</description>
+            <port protocol="tcp" port="{{ censhare_sclient_rmi_port }}"/>
+          </service>
+      notify: Reload firewalld
 
-- name: Apply firewalld changes before opening service
-  ansible.builtin.meta: flush_handlers
-  when: censhare_sclient_firewalld_active | default(false)
+    - name: Apply firewalld changes before opening service
+      ansible.builtin.meta: flush_handlers
 
-- name: Open service-client callback port in firewalld
-  become: true
-  ansible.posix.firewalld:
-    service: "{{ censhare_sclient_firewalld_service }}"
-    permanent: true
-    state: enabled
-    immediate: true
-  when: censhare_sclient_firewalld_active | default(false)
+    - name: Open service-client callback port in firewalld
+      become: true
+      ansible.posix.firewalld:
+        service: "{{ censhare_sclient_firewalld_service }}"
+        permanent: true
+        state: enabled
+        immediate: true
 
 - name: Configure collabora quadlet
   become: true
