@@ -34,7 +34,9 @@ Service Client configuration:
 - `censhare_sclient_censhare_version` (default `2023.1.2`)
 - `censhare_sclient_svc_user` / `censhare_sclient_svc_pass` (default `service-client` / `secret`)
 - `censhare_sclient_svc_host` (default `censhare-hostname`)
-- `censhare_sclient_office_url` (default `http://localhost:9980/cool/convert-to/pdf`)
+- `censhare_sclient_rmi_port` (default `30550`) fixed RMI callback port exposed to the censhare server
+- `censhare_sclient_callback_host` (default to `ansible_default_ipv4.address` fallback to the first IPv4 address or `inventory_hostname`) advertised callback host/IP when running in bridge/NAT mode
+- `censhare_sclient_office_url` (default `http://{{ censhare_sclient_collabora_name }}:9980/cool/convert-to/pdf`)
 - `censhare_sclient_instances` (default `4`)
 - `censhare_sclient_svc_appendix` (default `""`) optional suffix appended to all service-client resources when you run multiple stacks on one host
 - `censhare_sclient_collabora_appendix` (default `{{ censhare_sclient_svc_appendix }}`) optional suffix for Collabora resources; inherits the service-client suffix by default
@@ -45,8 +47,11 @@ Host integration:
 - `censhare_sclient_quadlet_wanted_by` (default `multi-user.target`)
 - `censhare_sclient_service_unit` / `censhare_sclient_collabora_service_unit` (systemd unit names; default `{{ name }}.service`)
 - `censhare_sclient_container_network` (default `censhare`) used for Collabora
+- `censhare_sclient_firewalld_service` (default `censhare-service-client{{ censhare_sclient_svc_appendix }}`) firewalld service name for the callback port; opened automatically when firewalld is running
 - `censhare_sclient_iccprofiles_dir` (default `/opt/iccprofiles`) mounted read-only into the service-client container
 - `censhare_sclient_volumes` and `censhare_sclient_volumes_info` (see `defaults/main.yml`) are provided for downstream consumers of the image metadata
+
+Networking: the service-client now runs in bridge mode on `{{ censhare_sclient_container_network }}`, publishes `{{ censhare_sclient_rmi_port }}` to the host, and rewrites the RMI stub using `censhare_sclient_callback_host`. Firewalld is adjusted when running to keep only the current port open.
 
 The Collabora Quadlet is ordered before the service-client Quadlet (`After=`) so Podman starts it first. If Collabora fails to start, the service-client still comes up but its conversion endpoint will be unavailable until Collabora is healthy.
 

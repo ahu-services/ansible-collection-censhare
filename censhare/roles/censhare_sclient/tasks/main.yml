@@ -70,6 +70,18 @@
   register: censhare_sclient_restorecon
   changed_when: censhare_sclient_restorecon.stdout is search('Relabeled')
 
+- name: Gather service facts for firewall detection
+  become: true
+  ansible.builtin.service_facts:
+
+- name: Determine if firewalld is active
+  ansible.builtin.set_fact:
+    censhare_sclient_firewalld_active: >-
+      {{
+        'firewalld.service' in (ansible_facts.services | default({}))
+        and ansible_facts.services['firewalld.service'].state == 'running'
+      }}
+
 - name: Ensure podman network for service-client exists
   become: true
   containers.podman.podman_network:
@@ -93,6 +105,42 @@
     state: present
   tags:
     - css_update
+
+- name: Install firewall bindings when firewalld is active
+  become: true
+  ansible.builtin.dnf:
+    name: python3-firewall
+    state: present
+  when: censhare_sclient_firewalld_active | default(false)
+
+- name: Define firewalld service for censhare service-client
+  become: true
+  ansible.builtin.copy:
+    dest: "/etc/firewalld/services/{{ censhare_sclient_firewalld_service }}.xml"
+    mode: '0644'
+    content: |
+      <?xml version="1.0" encoding="utf-8"?>
+      <service>
+        <short>{{ censhare_sclient_firewalld_service }}</short>
+        <description>censhare Service Client callback port</description>
+        <port protocol="tcp" port="{{ censhare_sclient_rmi_port }}"/>
+      </service>
+  when: censhare_sclient_firewalld_active | default(false)
+
+- name: Reload firewalld to pick up service definition
+  become: true
+  ansible.builtin.command: firewall-cmd --reload
+  changed_when: false
+  when: censhare_sclient_firewalld_active | default(false)
+
+- name: Open service-client callback port in firewalld
+  become: true
+  ansible.posix.firewalld:
+    service: "{{ censhare_sclient_firewalld_service }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  when: censhare_sclient_firewalld_active | default(false)
 
 - name: Configure collabora quadlet
   become: true
@@ -141,7 +189,9 @@
     state: quadlet
     quadlet_dir: "{{ censhare_sclient_quadlet_dir }}"
     quadlet_filename: "{{ censhare_sclient_svc_name }}"
-    network: host
+    network: "{{ censhare_sclient_container_network }}"
+    publish:
+      - "{{ censhare_sclient_rmi_port }}:{{ censhare_sclient_rmi_port }}"
     env:
       REPO_USER: "{{ censhare_sclient_repo_user }}"
       REPO_PASS: "{{ censhare_sclient_repo_pass }}"
@@ -151,6 +201,8 @@
       SVC_PASS: "{{ censhare_sclient_svc_pass }}"
       SVC_HOST: "{{ censhare_sclient_svc_host }}"
       OFFICE_URL: "{{ censhare_sclient_office_url }}"
+      SERVICECLIENT_RMI_PORT: "{{ censhare_sclient_rmi_port | string }}"
+      SERVICECLIENT_CALLBACK_HOST: "{{ censhare_sclient_callback_host }}"
       FFMPEG_TIMEOUT: "1800"
     volumes:
       - "{{ censhare_sclient_iccprofiles_dir }}:/iccprofiles{{ ':Z' if censhare_sclient_selinux_enforcing | default(false) else '' }}"
