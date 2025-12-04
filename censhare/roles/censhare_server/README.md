@@ -16,7 +16,7 @@ This role installs and configures the censhare Server stack (Server, Core Cloud 
 
 ## Requirements
 
-- Ansible 2.15 or newer (matches role metadata).
+- Ansible 2.16 or newer (matches role metadata).
 - EL8/EL9 hosts with systemd, Python 3, `dnf`, and outbound access to censhare repositories (or mirrors).
 - A privileged user to install RPMs, manage firewall/SELinux, and write to `/opt/corpus`.
 - Mandatory: `censhare_server_repo_user` and `censhare_server_repo_pass` must be set; the role fails fast if they are empty.

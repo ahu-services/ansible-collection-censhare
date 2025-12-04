@@ -7,7 +7,7 @@ repos:
         language: system
         pass_filenames: false
       - id: ansible-test-sanity
-        name: ansible-test sanity (ansible-core 2.15)
+        name: ansible-test sanity (ansible-core 2.16)
         entry: >
           bash -c 'set -euo pipefail;
           ROOT="$(pwd)/censhare";
