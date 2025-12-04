@@ -1,0 +1,20 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ansible-lint
+        name: ansible-lint
+        entry: bash -c "cd censhare && ansible-lint"
+        language: system
+        pass_filenames: false
+      - id: ansible-test-sanity
+        name: ansible-test sanity (ansible-core 2.15)
+        entry: >
+          bash -c 'set -euo pipefail;
+          ROOT="$(pwd)/censhare";
+          LAYOUT="$ROOT/.ansible/collections/ansible_collections/ahu_services/censhare";
+          mkdir -p "$(dirname "$LAYOUT")";
+          ln -sfn "$ROOT" "$LAYOUT";
+          cd "$LAYOUT";
+          ansible-test sanity --requirements'
+        language: system
+        pass_filenames: false

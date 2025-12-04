@@ -4,7 +4,7 @@ This collection, `ahu_services.censhare`, provides a set of Ansible roles for in
 
 ## Requirements
 
-- Ansible 2.18 or higher.
+- Ansible 2.15 or higher.
 - A Red Hat-compatible Linux distribution (e.g., RHEL, CentOS, Rocky Linux) for the target hosts.
 
 ## Installation
@@ -83,6 +83,10 @@ Here is a basic example of how to use the roles in this collection to set up a c
 ## Testing
 
 Molecule suites were removed to reduce maintenance overhead; no automated integration tests are currently shipped with the collection.
+
+## Development
+
+Run `pre-commit run --all-files` (or install the hook with `pre-commit install`) to execute `ansible-lint` and `ansible-test sanity --requirements` against the collection using ansible-core 2.15. The hook wires the repository into a local collection layout automatically.
 
 ## License
 

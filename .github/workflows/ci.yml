@@ -19,7 +19,7 @@ jobs:
 
       - name: Install tooling
         run: |
-          pip install --upgrade ansible-core ansible-lint
+          pip install --upgrade 'ansible-core==2.15.*' 'ansible-lint==24.9.2' pre-commit
 
-      - name: Lint
-        run: ansible-lint
+      - name: Run pre-commit (ansible-lint + ansible-test sanity)
+        run: pre-commit run --all-files
