@@ -31,7 +31,7 @@ Container images and versions:
 
 Service Client configuration:
 - `censhare_sclient_repo_user` / `censhare_sclient_repo_pass` (default `rpm_repo_user` / `rpm_repo_pass`)
-- `censhare_sclient_censhare_version` (default `2023.1.2`)
+- `censhare_sclient_censhare_version` (default `2025.2.0`)
 - `censhare_sclient_svc_user` / `censhare_sclient_svc_pass` (default `service-client` / `secret`)
 - `censhare_sclient_svc_host` (default `censhare-hostname`)
 - `censhare_sclient_rmi_port` (default `30550`) fixed RMI callback port exposed to the censhare server
