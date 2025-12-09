@@ -14,7 +14,7 @@ This Ansible role installs and configures Keycloak as the authentication service
 
 ### Keycloak General Configuration
 
-- `censhare_keycloak_version`: The version of Keycloak to install. Default: `24.0.4`.
+- `censhare_keycloak_version`: The version of Keycloak to install. Default: `26.4.7` (pin this in your inventory if you do not want newer collection defaults on upgrades).
 - `censhare_keycloak_self_hosted`: Indicates if Keycloak is self-hosted. Default: `true`.
 
 ### Database Configuration
@@ -22,6 +22,7 @@ This Ansible role installs and configures Keycloak as the authentication service
 - `censhare_keycloak_db_mode`: Specifies whether the database is in a container, hosted on the same machine, or delegated elsewhere. Options: `container`, `hosted`, `delegated`. Default: `container`.
 - `censhare_keycloak_db_data_dir`: Directory for database data storage. Default: `/var/lib/pgsql/data`.
 - `censhare_keycloak_db_host`: Hostname of the database server. Default: `postgres`.
+- `censhare_keycloak_db_version`: Postgres major version for the bundled DB container. Default: `17`.
 - `censhare_keycloak_db_user`: Database username for Keycloak. Default: `keycloak`.
 - `censhare_keycloak_db_pass`: Password for the database user. Default: `keycloak`.
 - `censhare_keycloak_db_name`: Name of the Keycloak database. Default: `keycloak`.

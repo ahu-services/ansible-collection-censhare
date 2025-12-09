@@ -24,7 +24,7 @@ This role installs and configures the censhare Server stack (Server, Core Cloud 
 ## Key variables
 
 Versions and repo access:
-- `censhare_server_version` (default `2023.1.2`), `censhare_server_cgw_version` (`3.1.9-1`), `censhare_server_srs_version` (`3.0.5-1`)
+- `censhare_server_version` (default `2025.2.0`), `censhare_server_cgw_version` (`4.1.2-1`), `censhare_server_srs_version` (`4.0.1-1`) – pin these to your running stack to avoid implicit upgrades when the collection bumps its tested defaults
 - `censhare_server_repo_user` / `censhare_server_repo_pass` (no defaults; required)
 - `censhare_server_repo_host`, `censhare_server_repo_path`, `censhare_server_tools_repo_path` control repository URLs
 

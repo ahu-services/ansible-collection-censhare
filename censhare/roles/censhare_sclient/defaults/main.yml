@@ -10,7 +10,7 @@ censhare_sclient_svc_pass: secret
 censhare_sclient_svc_host: censhare-hostname
 censhare_sclient_rmi_port: 30550
 censhare_sclient_callback_host: "{{ ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0] | default(inventory_hostname)) }}"
-censhare_sclient_collabora_version: latest
+censhare_sclient_collabora_version: "25.04.7.3.1"
 censhare_sclient_collabora_image: docker.io/collabora/code
 censhare_sclient_collabora_extra_params: "--o:ssl.enable=false"
 censhare_sclient_direct_volumes: false

@@ -11,6 +11,11 @@ This collection, `ahu_services.censhare`, provides a set of Ansible roles for in
 
 Role defaults track the versions we test with when releasing the collection (e.g., censhare Server/CGW/SRS builds and the `cs-image-tools` container tag). These defaults are bumped on collection updates. Pin either the collection version in your requirements or override the version variables in your inventory to keep a stable toolchain in your environment.
 
+Current default versions (subject to change with collection releases):
+- `censhare_server`: `censhare_server_version=2025.2.0`, `censhare_server_cgw_version=4.1.2-1`, `censhare_server_srs_version=4.0.1-1`
+- `censhare_sclient`: `censhare_sclient_censhare_version=2025.2.0`, `censhare_sclient_tools_version=1.8.1`, `censhare_sclient_collabora_version=25.04.7.3.1`
+- `censhare_keycloak`: `censhare_keycloak_version=26.4.7`, `censhare_keycloak_db_version=17`
+
 ## Installation
 
 To use this collection, install it from Ansible Galaxy:

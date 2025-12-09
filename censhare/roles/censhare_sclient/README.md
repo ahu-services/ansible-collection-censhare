@@ -24,14 +24,14 @@ This role provisions the censhare Service Client stack on Red Hat compatible hos
 
 Container images and versions:
 - `censhare_sclient_tools_image` (default `docker.io/ahuservices/cs-image-tools`)
-- `censhare_sclient_tools_version` (default `latest`)
+- `censhare_sclient_tools_version` (default `1.8.1`) – pin this tag in your inventory to avoid pulling a newer collection-tested default on upgrades
 - `censhare_sclient_collabora_image` (default `docker.io/collabora/code`)
-- `censhare_sclient_collabora_version` (default `latest`)
+- `censhare_sclient_collabora_version` (default `25.04.7.3.1`) – also pin if you do not want Collabora to track the collection defaults
 - `censhare_sclient_collabora_extra_params` (default `--o:ssl.enable=false`) forwarded to Collabora as `extra_params`
 
 Service Client configuration:
 - `censhare_sclient_repo_user` / `censhare_sclient_repo_pass` (default `rpm_repo_user` / `rpm_repo_pass`)
-- `censhare_sclient_censhare_version` (default `2025.2.0`)
+- `censhare_sclient_censhare_version` (default `2025.2.0`) – update/pin to the censhare Server build that matches your environment
 - `censhare_sclient_svc_user` / `censhare_sclient_svc_pass` (default `service-client` / `secret`)
 - `censhare_sclient_svc_host` (default `censhare-hostname`)
 - `censhare_sclient_rmi_port` (default `30550`) fixed RMI callback port exposed to the censhare server
