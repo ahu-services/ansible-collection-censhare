@@ -6,6 +6,9 @@
     state: present
     key: "{{ censhare_server_repo_gpg_url }}"
   when: ansible_distribution_major_version | int < 9
+  tags:
+    - css_install
+    - css_update
 
 - name: "Install censhare Components | Configure censhare-Server repository"
   become: true
@@ -17,6 +20,9 @@
     gpgkey: "{{ censhare_server_repo_gpg_url }}"
     enabled: false
     state: "present"
+  tags:
+    - css_install
+    - css_update
 
 - name: "Install censhare Components | Configure censhare-tools repository"
   become: true
@@ -28,6 +34,9 @@
     gpgkey: "{{ censhare_server_repo_gpg_url }}"
     enabled: false
     state: "present"
+  tags:
+    - css_install
+    - css_update
 
 
 - name: "Install censhare Components | Install censhare-Server"
@@ -40,6 +49,9 @@
     enablerepo: "censhare-Server,censhare-tools"
     state: present
     update_cache: true
+  tags:
+    - css_install
+    - css_update
 
 - name: "Configure censhare CSS_ID"
   become: true
@@ -63,3 +75,6 @@
       ## Mandatory:   yes
       ## Default:     ""
       CSS_ID="{{ censhare_server_css_id }}"
+  tags:
+    - css_install
+    - css_update

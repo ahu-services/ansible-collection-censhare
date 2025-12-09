@@ -5,6 +5,8 @@
     name: "{{ censhare_sclient_collabora_service_unit }}"
     daemon_reload: true
     state: restarted
+  tags:
+    - css_update
 
 - name: Restart service-client quadlet
   become: true
@@ -12,3 +14,11 @@
     name: "{{ censhare_sclient_service_unit }}"
     daemon_reload: true
     state: restarted
+  tags:
+    - css_update
+
+- name: Reload firewalld
+  become: true
+  ansible.builtin.systemd:
+    name: firewalld
+    state: reloaded

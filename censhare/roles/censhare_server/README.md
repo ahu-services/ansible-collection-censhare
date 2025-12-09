@@ -16,7 +16,7 @@ This role installs and configures the censhare Server stack (Server, Core Cloud 
 
 ## Requirements
 
-- Ansible 2.18 or newer (matches role metadata).
+- Ansible 2.16 or newer (matches role metadata).
 - EL8/EL9 hosts with systemd, Python 3, `dnf`, and outbound access to censhare repositories (or mirrors).
 - A privileged user to install RPMs, manage firewall/SELinux, and write to `/opt/corpus`.
 - Mandatory: `censhare_server_repo_user` and `censhare_server_repo_pass` must be set; the role fails fast if they are empty.
@@ -24,7 +24,7 @@ This role installs and configures the censhare Server stack (Server, Core Cloud 
 ## Key variables
 
 Versions and repo access:
-- `censhare_server_version` (default `2023.1.2`), `censhare_server_cgw_version` (`3.1.9-1`), `censhare_server_srs_version` (`3.0.5-1`)
+- `censhare_server_version` (default `2025.2.0`), `censhare_server_cgw_version` (`4.1.2-1`), `censhare_server_srs_version` (`4.0.1-1`) – pin these to your running stack to avoid implicit upgrades when the collection bumps its tested defaults
 - `censhare_server_repo_user` / `censhare_server_repo_pass` (no defaults; required)
 - `censhare_server_repo_host`, `censhare_server_repo_path`, `censhare_server_tools_repo_path` control repository URLs
 
@@ -72,7 +72,15 @@ See `roles/censhare_server/defaults/main.yml` for the full list.
     - ahu_services.censhare.censhare_server
 ```
 
-Useful tags: `css_install`, `css_server_config`, `css_database_config`, `css_services_config`, `css_webpack_config`.
+## Tags
+
+- `css_install` – repo wiring and package installation steps. Use for a fresh install or when updating RPMs.
+- `css_server_config` – renders launcher/server XML and related server-level config.
+- `css_database_config` – database XML templating and DB checks.
+- `css_services_config` – service XML generation (filesystem, Keycloak, mail) and supporting filesystem layout.
+- `css_webpack_config` – CGW/SRS templating and webpack artifact deployment.
+- `css_update` – idempotent steps that should run on update cycles (RPM updates and config template refresh). Assumes an initial install already created required directories and prerequisites.
+- `keycloak_setup` (other role) – applies Keycloak realm/user/client configuration.
 
 ## License
 

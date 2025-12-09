@@ -16,6 +16,8 @@
     mode: '0644'
     owner: "corpus"
     group: "corpus"
+  tags:
+    - css_update
 
 - name: "Configure Database | Install psycopg2"
   when: censhare_server_css_id == 'master'

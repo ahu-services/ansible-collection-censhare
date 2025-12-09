@@ -1,8 +1,8 @@
 ---
 # Variables for Software versions
-censhare_server_version: "2023.1.2"
-censhare_server_cgw_version: "3.1.9-1"
-censhare_server_srs_version: "3.0.5-1"
+censhare_server_version: "2025.2.0"
+censhare_server_cgw_version: "4.1.2-1"
+censhare_server_srs_version: "4.0.1-1"
 censhare_server_version_parts: "{{ censhare_server_version | split('.') }}"
 censhare_server_major_version: "{{ censhare_server_version_parts[0] }}"
 censhare_server_minor_version: "{{ censhare_server_version_parts[1] }}"

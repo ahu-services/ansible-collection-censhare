@@ -1,6 +1,6 @@
 ---
 # defaults file for ahu_services.censhare.censhare_keycloak
-censhare_keycloak_version: 24.0.5
+censhare_keycloak_version: 26.4.7
 censhare_keycloak_self_hosted: true
 censhare_keycloak_db_mode: container # || hosted || delegated
 censhare_keycloak_db_home_dir: /var/lib/pgsql

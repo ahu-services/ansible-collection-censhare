@@ -4,8 +4,17 @@ This collection, `ahu_services.censhare`, provides a set of Ansible roles for in
 
 ## Requirements
 
-- Ansible 2.18 or higher.
+- Ansible 2.16 or higher.
 - A Red Hat-compatible Linux distribution (e.g., RHEL, CentOS, Rocky Linux) for the target hosts.
+
+## Defaults and version pinning
+
+Role defaults track the versions we test with when releasing the collection (e.g., censhare Server/CGW/SRS builds and the `cs-image-tools` container tag). These defaults are bumped on collection updates. Pin either the collection version in your requirements or override the version variables in your inventory to keep a stable toolchain in your environment.
+
+Current default versions (subject to change with collection releases):
+- `censhare_server`: `censhare_server_version=2025.2.0`, `censhare_server_cgw_version=4.1.2-1`, `censhare_server_srs_version=4.0.1-1`
+- `censhare_sclient`: `censhare_sclient_censhare_version=2025.2.0`, `censhare_sclient_tools_version=1.8.1`, `censhare_sclient_collabora_version=25.04.7.3.1`
+- `censhare_keycloak`: `censhare_keycloak_version=26.4.7`, `censhare_keycloak_db_version=17`
 
 ## Installation
 
@@ -83,6 +92,10 @@ Here is a basic example of how to use the roles in this collection to set up a c
 ## Testing
 
 Molecule suites were removed to reduce maintenance overhead; no automated integration tests are currently shipped with the collection.
+
+## Development
+
+Run `pre-commit run --all-files` (or install the hook with `pre-commit install`) to execute `ansible-lint` and `ansible-test sanity --requirements` against the collection using ansible-core 2.16. The hook wires the repository into a local collection layout automatically.
 
 ## License
 

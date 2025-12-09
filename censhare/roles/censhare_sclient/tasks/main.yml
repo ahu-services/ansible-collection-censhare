@@ -55,20 +55,33 @@
   ansible.builtin.set_fact:
     censhare_sclient_selinux_enforcing: "{{ (ansible_selinux is defined) and (ansible_selinux.status == 'enabled') and (ansible_selinux.mode == 'enforcing') }}"
 
-- name: Persist SELinux context for ICC profiles directory
+- name: Ensure SELinux context for ICC profiles directory
   when: censhare_sclient_selinux_enforcing | default(false)
-  become: true
-  community.general.sefcontext:
-    target: "{{ censhare_sclient_iccprofiles_dir }}(/.*)?"
-    setype: container_file_t
-    state: present
+  block:
+    - name: Persist SELinux context for ICC profiles directory
+      become: true
+      community.general.sefcontext:
+        target: "{{ censhare_sclient_iccprofiles_dir }}(/.*)?"
+        setype: container_file_t
+        state: present
 
-- name: Apply SELinux context to ICC profiles directory
-  when: censhare_sclient_selinux_enforcing | default(false)
+    - name: Apply SELinux context to ICC profiles directory
+      become: true
+      ansible.builtin.command: "restorecon -Rv {{ censhare_sclient_iccprofiles_dir }}"
+      register: censhare_sclient_restorecon
+      changed_when: censhare_sclient_restorecon.stdout is search('Relabeled')
+
+- name: Gather service facts for firewall detection
   become: true
-  ansible.builtin.command: "restorecon -Rv {{ censhare_sclient_iccprofiles_dir }}"
-  register: censhare_sclient_restorecon
-  changed_when: censhare_sclient_restorecon.stdout is search('Relabeled')
+  ansible.builtin.service_facts:
+
+- name: Determine if firewalld is active
+  ansible.builtin.set_fact:
+    censhare_sclient_firewalld_active: >-
+      {{
+        'firewalld.service' in (ansible_facts.services | default({}))
+        and ansible_facts.services['firewalld.service'].state == 'running'
+      }}
 
 - name: Ensure podman network for service-client exists
   become: true
@@ -82,6 +95,8 @@
     name: "{{ censhare_sclient_tools_image }}"
     tag: "{{ censhare_sclient_tools_version }}"
     state: present
+  tags:
+    - css_update
 
 - name: Pull the collabora image
   become: true
@@ -89,6 +104,42 @@
     name: "{{ censhare_sclient_collabora_image }}"
     tag: "{{ censhare_sclient_collabora_version }}"
     state: present
+  tags:
+    - css_update
+
+- name: Configure firewalld for service-client callback
+  when: censhare_sclient_firewalld_active | default(false)
+  block:
+    - name: Install firewall bindings
+      become: true
+      ansible.builtin.dnf:
+        name: python3-firewall
+        state: present
+
+    - name: Define firewalld service for censhare service-client
+      become: true
+      ansible.builtin.copy:
+        dest: "/etc/firewalld/services/{{ censhare_sclient_firewalld_service }}.xml"
+        mode: '0644'
+        content: |
+          <?xml version="1.0" encoding="utf-8"?>
+          <service>
+            <short>{{ censhare_sclient_firewalld_service }}</short>
+            <description>censhare Service Client callback port</description>
+            <port protocol="tcp" port="{{ censhare_sclient_rmi_port }}"/>
+          </service>
+      notify: Reload firewalld
+
+    - name: Apply firewalld changes before opening service
+      ansible.builtin.meta: flush_handlers
+
+    - name: Open service-client callback port in firewalld
+      become: true
+      ansible.posix.firewalld:
+        service: "{{ censhare_sclient_firewalld_service }}"
+        permanent: true
+        state: enabled
+        immediate: true
 
 - name: Configure collabora quadlet
   become: true
@@ -116,6 +167,8 @@
         RestartSec=5
         TimeoutStopSec=70
   notify: Restart collabora quadlet
+  tags:
+    - css_update
 
 - name: Ensure collabora quadlet service is enabled
   become: true
@@ -124,6 +177,36 @@
     enabled: true
     state: started
     daemon_reload: true
+  tags:
+    - css_update
+
+- name: Initialize service-client volume list
+  ansible.builtin.set_fact:
+    censhare_sclient_extra_volumes: []
+
+- name: Add configured volumes for service-client
+  ansible.builtin.set_fact:
+    censhare_sclient_extra_volumes: >-
+      {{
+        censhare_sclient_extra_volumes
+        + [
+          item
+          + (
+            ':Z'
+            if (censhare_sclient_selinux_enforcing | default(false))
+            and not (item | regex_search(':[^:]*:[zZ]') or item | regex_search(':[zZ]$'))
+            else ''
+          )
+        ]
+      }}
+  loop: "{{ censhare_sclient_volumes | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Render VOLUMES_INFO payload when provided
+  ansible.builtin.set_fact:
+    censhare_sclient_volumes_info_json: "{{ censhare_sclient_volumes_info | to_json }}"
+  when: censhare_sclient_volumes_info | length > 0
 
 - name: Configure service-client quadlet
   become: true
@@ -133,7 +216,9 @@
     state: quadlet
     quadlet_dir: "{{ censhare_sclient_quadlet_dir }}"
     quadlet_filename: "{{ censhare_sclient_svc_name }}"
-    network: host
+    network: "{{ censhare_sclient_container_network }}"
+    publish:
+      - "{{ censhare_sclient_rmi_port }}:{{ censhare_sclient_rmi_port }}"
     env:
       REPO_USER: "{{ censhare_sclient_repo_user }}"
       REPO_PASS: "{{ censhare_sclient_repo_pass }}"
@@ -143,9 +228,15 @@
       SVC_PASS: "{{ censhare_sclient_svc_pass }}"
       SVC_HOST: "{{ censhare_sclient_svc_host }}"
       OFFICE_URL: "{{ censhare_sclient_office_url }}"
+      SERVICECLIENT_RMI_PORT: "{{ censhare_sclient_rmi_port | string }}"
+      SERVICECLIENT_CALLBACK_HOST: "{{ censhare_sclient_callback_host }}"
+      VOLUMES_INFO: "{{ censhare_sclient_volumes_info_json | default(omit) }}"
       FFMPEG_TIMEOUT: "1800"
-    volumes:
-      - "{{ censhare_sclient_iccprofiles_dir }}:/iccprofiles{{ ':Z' if censhare_sclient_selinux_enforcing | default(false) else '' }}"
+    volumes: >-
+      {{
+        [censhare_sclient_iccprofiles_dir ~ ':/iccprofiles' ~ (':Z' if censhare_sclient_selinux_enforcing | default(false) else '')]
+        + (censhare_sclient_extra_volumes | default([]))
+      }}
     quadlet_options:
       - |
         [Install]
@@ -160,6 +251,8 @@
         TimeoutStopSec=70
   notify: Restart service-client quadlet
   no_log: true
+  tags:
+    - css_update
 
 - name: Ensure service-client quadlet service is enabled
   become: true
@@ -168,3 +261,5 @@
     enabled: true
     state: started
     daemon_reload: true
+  tags:
+    - css_update
