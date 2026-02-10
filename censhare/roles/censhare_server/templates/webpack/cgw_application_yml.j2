@@ -134,9 +134,9 @@ spring.cloud.gateway.routes:
         - id: {{ branding.name }}_upload_endpoint
           uri: http://${CENSHARE_SERVER_HOST_PORT}
           predicates:
-            - Path={{ branding.path }}/upload
+            - Path={{ branding.path }}/upload/**
           filters:
-            - RewritePath={{ branding.path }}/upload, /webserver/upload
+            - RewritePath={{ branding.path }}/upload/(?<segment>.*), /webserver/upload/$\{segment}
             - CustomTokenRelay
 
         ## Routes to censhare-Server, please change ws://censhare-server URLs to point to your censhare-Server.
@@ -158,6 +158,8 @@ spring.cloud.gateway.routes:
           filters:
             - RewritePath={{ branding.path }}/(?<segment>.*), /$\{segment}
             - RewritePath={{ branding.path }}, /
+            - RemoveRequestHeader=Cookie
+            - AddResponseHeader=Set-Cookie, CENSHARE_USER_LOGIN==============
             - CustomTokenRelay
             - AddRequestHeader=Branding, {{ branding.name }}
 
@@ -167,6 +169,8 @@ spring.cloud.gateway.routes:
           predicates:
             - Path=/**
           filters:
+            - RemoveRequestHeader=Cookie
+            - AddResponseHeader=Set-Cookie, CENSHARE_USER_LOGIN==============
             - CustomTokenRelay
             # Passing default branding for customers that have more than one branding
             - AddRequestHeader=Branding, {{ censhare_server_cgw_default_branding.name }}
