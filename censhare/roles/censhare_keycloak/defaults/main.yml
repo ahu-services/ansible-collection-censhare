@@ -1,6 +1,6 @@
 ---
 # defaults file for ahu_services.censhare.censhare_keycloak
-censhare_keycloak_version: 26.4.7
+censhare_keycloak_version: 26.3.0
 censhare_keycloak_self_hosted: true
 censhare_keycloak_db_mode: container # || hosted || delegated
 censhare_keycloak_db_home_dir: /var/lib/pgsql
@@ -50,6 +50,7 @@ censhare_keycloak_tls_self_signed_valid_days: 825
 censhare_keycloak_http_relative_path: /auth
 censhare_keycloak_proxy_headers: xforwarded
 censhare_keycloak_realm: censhare
+censhare_keycloak_realm_management_client_id: realm-management
 censhare_keycloak_realm_roles:
   - create-client
   - impersonation
