@@ -94,7 +94,7 @@
             Restart=always
             RestartSec=5
       notify: Restart keycloak database quadlet
-      no_log: true
+      no_log: "{{ censhare_keycloak_no_log }}"
 
     - name: Ensure Postgres quadlet service is enabled
       become: true
@@ -102,6 +102,8 @@
         name: "{{ censhare_keycloak_db_service_unit }}"
         enabled: true
         state: started
+      # unit status echoes the podman command line incl. POSTGRES_PASSWORD
+      no_log: "{{ censhare_keycloak_no_log }}"
 
     - name: Wait for Postgres quadlet container to be running
       become: true
@@ -114,11 +116,14 @@
         (censhare_keycloak_db_container_podman.containers[0].State.Running | default(false))
       retries: 10
       delay: 3
+      # container inspect echoes the environment incl. POSTGRES_PASSWORD
+      no_log: "{{ censhare_keycloak_no_log }}"
 
     - name: Debug Show container attributes
       ansible.builtin.debug:
         var: censhare_keycloak_db_container_podman
         verbosity: 1
+      no_log: "{{ censhare_keycloak_no_log }}"
 
     - name: Set DB Host for Podman
       ansible.builtin.set_fact:
@@ -152,7 +157,7 @@
           POSTGRES_DB: "{{ censhare_keycloak_db_name }}"
           PGDATA: "{{ censhare_keycloak_pgdata_path }}"
       register: censhare_keycloak_db_container_docker
-      no_log: true
+      no_log: "{{ censhare_keycloak_no_log }}"
 
     - name: Set DB Host for Docker
       ansible.builtin.set_fact:

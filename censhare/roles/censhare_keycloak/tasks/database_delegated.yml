@@ -7,7 +7,7 @@
 - name: Setup Database for keycloak on delegated host
   delegate_to: "{{ censhare_keycloak_db_host_delegated }}"
   become: true
-  no_log: true
+  no_log: "{{ censhare_keycloak_no_log }}"
   block:
     - name: Ensure PostgreSQL Python libraries are installed
       ansible.builtin.package:
