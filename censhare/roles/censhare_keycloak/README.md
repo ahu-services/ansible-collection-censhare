@@ -10,12 +10,38 @@ This Ansible role installs and configures Keycloak as the authentication service
 - Ansible 2.16 or higher (matches the collection `requires_ansible` setting).
 - Target hosts should be running a compatible Linux distribution with Podman available. The role relies on Podman Quadlets (`state: quadlet`) when Keycloak or its bundled Postgres DB runs in containers.
 
+## Supported Keycloak versions
+
+The role targets the **Keycloak 26.x line and newer** and does not branch on the requested
+version. Every option name it writes into the container environment has been stable across
+all of 26.x, so a single code path covers the whole range. The role asserts the minimum on
+run and fails with a clear message if an older tag is pinned.
+
+This is deliberate. The renames that would require version switches all happened at the
+25 → 26 boundary:
+
+| Removed / renamed in 26.0 | Replacement | Role status |
+| --- | --- | --- |
+| `KC_PROXY=edge` | `KC_PROXY_HEADERS=xforwarded` | uses the new name |
+| `KC_HOSTNAME_STRICT_HTTPS` | dropped, no replacement | never set |
+| `KC_HOSTNAME` as bare hostname | full URL incl. relative path | uses the full URL |
+| `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD` | `KC_BOOTSTRAP_ADMIN_USERNAME` / `KC_BOOTSTRAP_ADMIN_PASSWORD` | uses the new names |
+
+If support for a pre-26 release is ever needed again, pin the collection to `1.2.x` for that
+host instead of adding conditionals here. Keeping one supported line is what keeps the role
+readable across customers.
+
+Note that the role variables (`censhare_keycloak_admin_user`, `censhare_keycloak_admin_pass`)
+are unchanged. Only the container environment variables they are mapped to were renamed, so
+existing inventories keep working without edits.
+
 ## Role Variables
 
 ### Keycloak General Configuration
 
-- `censhare_keycloak_version`: The version of Keycloak to install. Default: `26.4.7` (pin this in your inventory if you do not want newer collection defaults on upgrades).
+- `censhare_keycloak_version`: The version of Keycloak to install. Default: `26.7.3` (pin this in your inventory if you do not want newer collection defaults on upgrades). **Keycloak 26.0 is the minimum**, the role asserts this on run. See "Supported Keycloak versions" below.
 - `censhare_keycloak_self_hosted`: Indicates if Keycloak is self-hosted. Default: `true`.
+- `censhare_keycloak_no_log`: Controls `no_log` on every task that handles or echoes secrets (Keycloak API calls, quadlet and unit status, container inspect). Default: `true`. Set to `false` temporarily to see the real error message of a failing Keycloak module, e.g. `-e censhare_keycloak_no_log=false`. Never leave it off in CI, the unit status prints the admin and DB passwords.
 
 ### Database Configuration
 

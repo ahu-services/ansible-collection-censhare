@@ -1,7 +1,9 @@
 ---
 # defaults file for ahu_services.censhare.censhare_keycloak
-censhare_keycloak_version: 26.4.7
+censhare_keycloak_version: 26.7.3
 censhare_keycloak_self_hosted: true
+# Set to false to see module errors and container/unit details (they contain secrets).
+censhare_keycloak_no_log: true
 censhare_keycloak_db_mode: container # || hosted || delegated
 censhare_keycloak_db_home_dir: /var/lib/pgsql
 censhare_keycloak_db_data_dir: "{{ censhare_keycloak_db_home_dir }}/data"
