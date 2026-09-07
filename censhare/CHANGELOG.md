@@ -9,6 +9,7 @@
 - The role now asserts `censhare_keycloak_version >= 26.0` when a numeric tag is pinned and fails with a clear message otherwise. Pin the collection to 1.2.x for older Keycloak releases.
 - New `censhare_keycloak_no_log` (default `true`) drives every `no_log` in the role, so module errors can be surfaced with `-e censhare_keycloak_no_log=false`.
 - The systemd unit status and container inspect tasks are now `no_log` as well; they previously echoed the admin and database passwords into the play output.
+- Realm SMTP settings now send `replyTo` (the key Keycloak expects) instead of `reply_to`, which made every run report a change and dropped the configured reply-to address.
 - README default version corrected to match `defaults/main.yml`.
 
 ## 1.0.0 - 2025-10-31
