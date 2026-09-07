@@ -57,6 +57,26 @@
     loop_var: realm
   tags: keycloak_setup
   no_log: true
+
+- name: Ensure realm-management roles are assigned to censhare service user
+  community.general.keycloak_user_rolemapping:
+    auth_client_id: admin-cli
+    auth_keycloak_url: "{{ censhare_keycloak_hostname_url }}"
+    auth_realm: master
+    auth_username: "{{ censhare_keycloak_admin_user }}"
+    auth_password: "{{ censhare_keycloak_admin_pass }}"
+    realm: "{{ realm.name }}"
+    target_username: "{{ realm.svc_user }}"
+    client_id: "{{ censhare_keycloak_realm_management_client_id }}"
+    roles: "{{ censhare_keycloak_realm_roles | map('community.general.dict_kv', 'name') | list }}"
+    state: present
+    validate_certs: false
+  loop: "{{ censhare_keycloak_realms }}"
+  loop_control:
+    loop_var: realm
+  tags: keycloak_setup
+  no_log: true
+
 - name: Create or update censhare5 client in keycloak
   become: false
   community.general.keycloak_client:

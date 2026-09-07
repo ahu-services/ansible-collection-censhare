@@ -42,7 +42,8 @@ This Ansible role installs and configures Keycloak as the authentication service
 - `censhare_keycloak_admin_pass`: Admin password for Keycloak. Default: `secret`.
 - `censhare_keycloak_svc_user`: Service user for Keycloak. Default: `keycloak-service`.
 - `censhare_keycloak_svc_pass`: Password for the service user. Default: `service_password`.
-- `censhare_keycloak_realm_roles`: List of roles to be to be assigned for the censhare Service user.
+- `censhare_keycloak_realm_management_client_id`: Client ID that contains service-user management roles. Default: `realm-management`.
+- `censhare_keycloak_realm_roles`: List of roles from the `realm-management` client to assign to the censhare service user.
 
 ### Keycloak Client Configuration
 
