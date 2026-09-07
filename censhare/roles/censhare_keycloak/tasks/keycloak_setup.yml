@@ -68,13 +68,7 @@
     realm: "{{ realm.name }}"
     target_username: "{{ realm.svc_user }}"
     client_id: "{{ censhare_keycloak_realm_management_client_id }}"
-    roles: >-
-      {{
-        censhare_keycloak_realm_roles
-        | map('regex_replace', '^(.*)$', '{"name": "\\1"}')
-        | map('from_yaml')
-        | list
-      }}
+    roles: "{{ censhare_keycloak_realm_roles | map('community.general.dict_kv', 'name') | list }}"
     state: present
     validate_certs: false
   loop: "{{ censhare_keycloak_realms }}"
