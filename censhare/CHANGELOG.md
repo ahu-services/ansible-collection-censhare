@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1 - 2026-09-13
+
+### censhare_server
+
+- Fix: `#jinja2:` template headers set `lstrip_blocks`/`trim_blocks` as strings (`"True"`); ansible-core 2.19 rejects that with `TemplateOverrides.lstrip_blocks must be <class 'bool'>`, which broke the mail and filesystem service templates. Now booleans, works on 2.16 as well.
+
 ## 1.4.0 - 2026-09-13
 
 ### censhare_server
