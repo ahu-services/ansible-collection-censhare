@@ -3,6 +3,7 @@
     auth_client_id: admin-cli
     auth_keycloak_url: "{{ censhare_keycloak_hostname_url }}"
     auth_realm: master
+    connection_timeout: "{{ censhare_keycloak_api_timeout }}"
     auth_username: "{{ censhare_keycloak_admin_user }}"
     auth_password: "{{ censhare_keycloak_admin_pass }}"
     id: "{{ realm.name }}"
@@ -16,6 +17,7 @@
     reset_password_allowed: true
     edit_username_allowed: false
     brute_force_protected: false
+    login_theme: "{{ realm.login_theme | default(censhare_keycloak_login_theme) | default(omit, true) }}"
     state: present
     validate_certs: false
     smtp_server:
@@ -40,6 +42,7 @@
     auth_username: "{{ censhare_keycloak_admin_user }}"
     auth_password: "{{ censhare_keycloak_admin_pass }}"
     auth_realm: master
+    connection_timeout: "{{ censhare_keycloak_api_timeout }}"
     username: "{{ realm.svc_user }}"
     realm: "{{ realm.name }}"
     enabled: true
@@ -63,6 +66,7 @@
     validate_certs: false
     auth_keycloak_url: "{{ censhare_keycloak_hostname_url }}"
     auth_realm: master
+    connection_timeout: "{{ censhare_keycloak_api_timeout }}"
     realm: "{{ realm.name }}"
     auth_username: "{{ censhare_keycloak_admin_user }}"
     auth_password: "{{ censhare_keycloak_admin_pass }}"
@@ -147,13 +151,12 @@
   tags: keycloak_setup
   no_log: "{{ censhare_keycloak_no_log }}"
 - name: Create or update desktop-app client in keycloak
-  vars:
-    realm: "{{ item }}"
   become: false
   community.general.keycloak_client:
     validate_certs: false
     auth_keycloak_url: "{{ censhare_keycloak_hostname_url }}"
     auth_realm: master
+    connection_timeout: "{{ censhare_keycloak_api_timeout }}"
     realm: "{{ realm.name }}"
     auth_username: "{{ censhare_keycloak_admin_user }}"
     auth_password: "{{ censhare_keycloak_admin_pass }}"

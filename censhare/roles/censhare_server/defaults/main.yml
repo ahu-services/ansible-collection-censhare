@@ -43,12 +43,21 @@ censhare_server_custom_truststore: "false"
 censhare_server_rmi_keystore_alias: "localhost.censhare.com"
 
 # Variables for Database configuration
+# censhare_server_db_type: postgres | oracle
+#   postgres: JDBC URL jdbc:postgresql://host:port/db, schema created from
+#             postgresql-create-db.sql when the party table is missing
+#   oracle:   JDBC URL jdbc:oracle:thin:@//host:port/service, schema/user must
+#             exist (create-user.sql, e.g. on RDS); the role only runs CheckJDBC.sh
+censhare_server_db_type: "postgres"
 censhare_server_db_host: "localhost"
-censhare_server_db_port: "5432"
+censhare_server_db_port: "{{ (censhare_server_db_type == 'oracle') | ternary('1521', '5432') }}"
 censhare_server_db_name: "corpus"
 censhare_server_db_user: "corpus"
 censhare_server_db_pass: "corpus"
-censhare_server_db_url: "jdbc:postgresql://{{ censhare_server_db_host }}:{{ censhare_server_db_port }}/{{ censhare_server_db_name }}"
+censhare_server_db_url: >-
+  {{ (censhare_server_db_type == 'oracle')
+     | ternary('jdbc:oracle:thin:@//' ~ censhare_server_db_host ~ ':' ~ censhare_server_db_port ~ '/' ~ censhare_server_db_name,
+               'jdbc:postgresql://' ~ censhare_server_db_host ~ ':' ~ censhare_server_db_port ~ '/' ~ censhare_server_db_name) }}
 
 # Variables for filesystem configuration
 censhare_server_filesystems: []

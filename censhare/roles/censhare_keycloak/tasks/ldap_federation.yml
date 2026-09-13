@@ -1,0 +1,55 @@
+---
+# LDAP / Active Directory user federation for the censhare realm(s).
+# Users are imported on first login (or via the Keycloak sync), passwords stay
+# in the directory. censhare maps them by login name (Keycloak lowercases usernames).
+- name: Ensure LDAP bind settings are present
+  ansible.builtin.assert:
+    that:
+      - censhare_keycloak_ldap_url | length > 0
+      - censhare_keycloak_ldap_users_dn | length > 0
+    fail_msg: "censhare_keycloak_ldap_url and censhare_keycloak_ldap_users_dn are required when censhare_keycloak_ldap_enabled is true."
+
+- name: Configure LDAP user federation
+  community.general.keycloak_user_federation:
+    auth_keycloak_url: "{{ censhare_keycloak_hostname_url }}"
+    auth_realm: master
+    connection_timeout: "{{ censhare_keycloak_api_timeout }}"
+    auth_username: "{{ censhare_keycloak_admin_user }}"
+    auth_password: "{{ censhare_keycloak_admin_pass }}"
+    validate_certs: false
+    realm: "{{ realm.name }}"
+    name: "{{ censhare_keycloak_ldap_name }}"
+    state: present
+    provider_id: ldap
+    provider_type: org.keycloak.storage.UserStorageProvider
+    config:
+      enabled: true
+      priority: 0
+      vendor: "{{ censhare_keycloak_ldap_vendor }}"
+      connectionUrl: "{{ censhare_keycloak_ldap_url }}"
+      startTls: "{{ censhare_keycloak_ldap_starttls }}"
+      useTruststoreSpi: "{{ censhare_keycloak_ldap_use_truststore_spi }}"
+      authType: "{{ (censhare_keycloak_ldap_bind_dn | length > 0) | ternary('simple', 'none') }}"
+      bindDn: "{{ censhare_keycloak_ldap_bind_dn if censhare_keycloak_ldap_bind_dn | length > 0 else omit }}"
+      bindCredential: "{{ censhare_keycloak_ldap_bind_password if censhare_keycloak_ldap_bind_dn | length > 0 else omit }}"
+      usersDn: "{{ censhare_keycloak_ldap_users_dn }}"
+      usernameLDAPAttribute: "{{ censhare_keycloak_ldap_username_attribute }}"
+      rdnLDAPAttribute: "{{ censhare_keycloak_ldap_rdn_attribute }}"
+      uuidLDAPAttribute: "{{ censhare_keycloak_ldap_uuid_attribute }}"
+      userObjectClasses: "{{ censhare_keycloak_ldap_user_object_classes }}"
+      customUserSearchFilter: "{{ censhare_keycloak_ldap_user_search_filter if censhare_keycloak_ldap_user_search_filter | length > 0 else omit }}"
+      editMode: "{{ censhare_keycloak_ldap_edit_mode }}"
+      importEnabled: true
+      syncRegistrations: false
+      searchScope: 2
+      pagination: true
+      trustEmail: "{{ censhare_keycloak_ldap_trust_email }}"
+      batchSizeForSync: 1000
+      fullSyncPeriod: "{{ censhare_keycloak_ldap_full_sync_period }}"
+      changedSyncPeriod: "{{ censhare_keycloak_ldap_changed_sync_period }}"
+    mappers: "{{ censhare_keycloak_ldap_mappers }}"
+  loop: "{{ censhare_keycloak_realms }}"
+  loop_control:
+    loop_var: realm
+  tags: keycloak_setup
+  no_log: "{{ censhare_keycloak_no_log }}"

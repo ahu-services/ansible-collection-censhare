@@ -41,6 +41,7 @@ existing inventories keep working without edits.
 
 - `censhare_keycloak_version`: The version of Keycloak to install. Default: `26.7.3` (pin this in your inventory if you do not want newer collection defaults on upgrades). **Keycloak 26.0 is the minimum**, the role asserts this on run. See "Supported Keycloak versions" below.
 - `censhare_keycloak_self_hosted`: Indicates if Keycloak is self-hosted. Default: `true`.
+- `censhare_keycloak_api_timeout`: Timeout in seconds for Keycloak admin API calls (`connection_timeout` of the `keycloak_*` modules). Default: `60`.
 - `censhare_keycloak_no_log`: Controls `no_log` on every task that handles or echoes secrets (Keycloak API calls, quadlet and unit status, container inspect). Default: `true`. Set to `false` temporarily to see the real error message of a failing Keycloak module, e.g. `-e censhare_keycloak_no_log=false`. Never leave it off in CI, the unit status prints the admin and DB passwords.
 
 ### Database Configuration
@@ -59,7 +60,8 @@ existing inventories keep working without edits.
 ### Keycloak Realm Configuration
 
 - `censhare_keycloak_realm`: Name of the default Keycloak realm. Default: `censhare`.
-- `censhare_keycloak_realms`: List of realm configuration dictionaries. The first (default) entry mirrors the legacy single variables, so existing inventories continue to work. Each entry supports `name`, `display_name`, `svc_user`, `svc_pass`, `client_secret`, `desktop_secret`, `smtp_host`, `smtp_user`, `smtp_pass`, `smtp_from`, `smtp_from_display_name`, `smtp_reply_to`, `smtp_port`, `smtp_starttls`, `smtp_ssl`, and `smtp_auth`.
+- `censhare_keycloak_realms`: List of realm configuration dictionaries. The first (default) entry mirrors the legacy single variables, so existing inventories continue to work. Each entry supports `name`, `display_name`, `login_theme`, `svc_user`, `svc_pass`, `client_secret`, `desktop_secret`, `smtp_host`, `smtp_user`, `smtp_pass`, `smtp_from`, `smtp_from_display_name`, `smtp_reply_to`, `smtp_port`, `smtp_starttls`, `smtp_ssl`, and `smtp_auth`.
+- `censhare_keycloak_login_theme`: Login theme applied to every realm unless the realm entry sets `login_theme` (e.g. `censhare`). The theme itself must be present on the Keycloak server (`/opt/keycloak/themes` or a theme JAR in `/opt/keycloak/providers`); with containers, bake it into the image. Default: empty (Keycloak default theme).
 - `censhare_keycloak_realms_defaults`: Helper variable that contains the role's default list. Reference it if you only want to append or extend the shipped configuration, e.g. `censhare_keycloak_realms: "{{ censhare_keycloak_realms_defaults + my_extra_realms }}"`.
 
 ### Keycloak User Configuration
@@ -83,6 +85,24 @@ existing inventories keep working without edits.
 - `censhare_keycloak_tls_certificate_src` / `censhare_keycloak_tls_private_key_src`: Optional controller-side files that should be copied to the host. If you omit both certificate and key, the role generates a self-signed pair on the fly (see `censhare_keycloak_tls_self_signed_subject`, `censhare_keycloak_tls_self_signed_sans`, `censhare_keycloak_tls_self_signed_valid_days`).
 - `censhare_keycloak_tls_certificate_content` / `censhare_keycloak_tls_private_key_content`: Inline PEM alternatives to the `_src` options.
 - `censhare_keycloak_https_host_port` / `censhare_keycloak_https_container_port`: Host and container port for HTTPS (default `8443:8443`). HTTP ports are managed via `censhare_keycloak_http_host_port` and `censhare_keycloak_http_container_port`.
+
+### LDAP / Active Directory user federation
+
+Optional, off by default. When enabled, the role adds an LDAP user storage
+provider to every realm in `censhare_keycloak_realms` (users are imported on
+first login, passwords stay in the directory). Works with `self_hosted: false`
+as well, so it can target a Keycloak that runs elsewhere (e.g. ECS/Kubernetes).
+
+- `censhare_keycloak_ldap_enabled`: Default `false`.
+- `censhare_keycloak_ldap_name`: Provider display name. Default `ldap`.
+- `censhare_keycloak_ldap_vendor`: `ad` (default), `rhds`, `tivoli`, `edirectory`, `other`.
+- `censhare_keycloak_ldap_url`: e.g. `ldap://dc01.example.com:389` (required).
+- `censhare_keycloak_ldap_bind_dn` / `censhare_keycloak_ldap_bind_password`: Bind account; empty = anonymous bind.
+- `censhare_keycloak_ldap_users_dn`: Search base for users (required).
+- `censhare_keycloak_ldap_username_attribute` (`sAMAccountName`), `_rdn_attribute` (`cn`), `_uuid_attribute` (`objectGUID`), `_user_object_classes`, `_user_search_filter`: AD defaults; adjust for other directories.
+- `censhare_keycloak_ldap_edit_mode`: `READ_ONLY` (default), `WRITABLE`, `UNSYNCED`.
+- `censhare_keycloak_ldap_starttls`, `censhare_keycloak_ldap_use_truststore_spi`, `censhare_keycloak_ldap_trust_email`, `censhare_keycloak_ldap_full_sync_period`, `censhare_keycloak_ldap_changed_sync_period`.
+- `censhare_keycloak_ldap_mappers`: List of LDAP mappers; the default maps username, email, first and last name.
 
 ### Keycloak SMTP Configuration
 

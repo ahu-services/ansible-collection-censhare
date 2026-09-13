@@ -4,6 +4,8 @@ censhare_keycloak_version: 26.7.3
 censhare_keycloak_self_hosted: true
 # Set to false to see module errors and container/unit details (they contain secrets).
 censhare_keycloak_no_log: true
+# Timeout (s) for Keycloak admin API calls; realm creation on small instances can exceed the module default of 10
+censhare_keycloak_api_timeout: 60
 censhare_keycloak_db_mode: container # || hosted || delegated
 censhare_keycloak_db_home_dir: /var/lib/pgsql
 censhare_keycloak_db_data_dir: "{{ censhare_keycloak_db_home_dir }}/data"
@@ -52,6 +54,10 @@ censhare_keycloak_tls_self_signed_valid_days: 825
 censhare_keycloak_http_relative_path: /auth
 censhare_keycloak_proxy_headers: xforwarded
 censhare_keycloak_realm: censhare
+# Login theme of the realm(s), e.g. "censhare" when the censhare theme is
+# deployed to /opt/keycloak/themes (RPM) or baked into the container image.
+# Empty = Keycloak default; per realm via the realm entry key "login_theme".
+censhare_keycloak_login_theme: ""
 censhare_keycloak_realm_roles:
   - create-client
   - impersonation
@@ -103,3 +109,60 @@ censhare_keycloak_realms_defaults:
     smtp_ssl: "{{ censhare_keycloak_smtp_ssl }}"
     smtp_auth: "{{ censhare_keycloak_smtp_auth }}"
 censhare_keycloak_realms: "{{ censhare_keycloak_realms_defaults }}"
+
+# LDAP / Active Directory user federation (applied to every realm in censhare_keycloak_realms)
+censhare_keycloak_ldap_enabled: false
+censhare_keycloak_ldap_name: ldap
+censhare_keycloak_ldap_vendor: ad # ad | rhds | tivoli | edirectory | other
+censhare_keycloak_ldap_url: ""
+censhare_keycloak_ldap_starttls: "false"
+censhare_keycloak_ldap_use_truststore_spi: never # never | always (ldaps with custom CA)
+censhare_keycloak_ldap_bind_dn: ""
+censhare_keycloak_ldap_bind_password: ""
+censhare_keycloak_ldap_users_dn: ""
+censhare_keycloak_ldap_username_attribute: sAMAccountName
+censhare_keycloak_ldap_rdn_attribute: cn
+censhare_keycloak_ldap_uuid_attribute: objectGUID
+censhare_keycloak_ldap_user_object_classes: "person, organizationalPerson, user"
+censhare_keycloak_ldap_user_search_filter: ""
+censhare_keycloak_ldap_edit_mode: READ_ONLY
+censhare_keycloak_ldap_trust_email: "true"
+censhare_keycloak_ldap_full_sync_period: "-1"
+censhare_keycloak_ldap_changed_sync_period: "-1"
+censhare_keycloak_ldap_mappers:
+  - name: username
+    providerId: user-attribute-ldap-mapper
+    providerType: org.keycloak.storage.ldap.mappers.LDAPStorageMapper
+    config:
+      ldap.attribute: "{{ censhare_keycloak_ldap_username_attribute }}"
+      user.model.attribute: username
+      read.only: "true"
+      always.read.value.from.ldap: "false"
+      is.mandatory.in.ldap: "true"
+  - name: email
+    providerId: user-attribute-ldap-mapper
+    providerType: org.keycloak.storage.ldap.mappers.LDAPStorageMapper
+    config:
+      ldap.attribute: mail
+      user.model.attribute: email
+      read.only: "true"
+      always.read.value.from.ldap: "false"
+      is.mandatory.in.ldap: "false"
+  - name: first name
+    providerId: user-attribute-ldap-mapper
+    providerType: org.keycloak.storage.ldap.mappers.LDAPStorageMapper
+    config:
+      ldap.attribute: givenName
+      user.model.attribute: firstName
+      read.only: "true"
+      always.read.value.from.ldap: "true"
+      is.mandatory.in.ldap: "false"
+  - name: last name
+    providerId: user-attribute-ldap-mapper
+    providerType: org.keycloak.storage.ldap.mappers.LDAPStorageMapper
+    config:
+      ldap.attribute: sn
+      user.model.attribute: lastName
+      read.only: "true"
+      always.read.value.from.ldap: "true"
+      is.mandatory.in.ldap: "false"

@@ -2,7 +2,7 @@
 # tasks file for installing Keycloak in container mode
 
 - name: Ensure the requested Keycloak version is supported
-  when: censhare_keycloak_version | regex_search('^[0-9]+\.[0-9]+')
+  when: censhare_keycloak_version is match('^[0-9]+\.[0-9]+') # only for numeric tags (not 'latest'); must be a boolean (ansible-core 2.19)
   ansible.builtin.assert:
     that:
       - censhare_keycloak_version is version('26.0.0', '>=')

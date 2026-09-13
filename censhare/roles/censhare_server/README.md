@@ -24,7 +24,7 @@ This role installs and configures the censhare Server stack (Server, Core Cloud 
 ## Key variables
 
 Versions and repo access:
-- `censhare_server_version` (default `2025.2.0`), `censhare_server_cgw_version` (`4.1.2-1`), `censhare_server_srs_version` (`4.0.1-1`) – pin these to your running stack to avoid implicit upgrades when the collection bumps its tested defaults
+- `censhare_server_version` (default `2025.2.0`), `censhare_server_cgw_version` (`4.1.2-1`), `censhare_server_srs_version` (`4.0.1-1`) – pin these to your running stack to avoid implicit upgrades when the collection bumps its tested defaults. Versioned XML templates exist for 2023.1 … 2026.1; 2026.1 (Java 25) ships a launcher without the removed Java Security Manager properties and with `jdk.xml.elementAttributeLimit=10000`. Java itself is not installed by the role (2026.1 needs JDK 25, e.g. Amazon Corretto).
 - `censhare_server_repo_user` / `censhare_server_repo_pass` (no defaults; required)
 - `censhare_server_repo_host`, `censhare_server_repo_path`, `censhare_server_tools_repo_path` control repository URLs
 
@@ -34,8 +34,9 @@ Server/runtime:
 - Filesystem mounts via `censhare_server_filesystems` (see commented examples in `defaults/main.yml`)
 
 Database:
-- `censhare_server_db_host`/`_port`/`_name`/`_user`/`_pass`; JDBC URL derives from these
-- Master node installs `python3-psycopg2` and runs `CheckJDBC.sh`; creates schema when missing
+- `censhare_server_db_type` (`postgres` default, or `oracle`); `censhare_server_db_host`/`_port`/`_name`/`_user`/`_pass`; the JDBC URL (`censhare_server_db_url`) derives from these (Oracle: `jdbc:oracle:thin:@//host:1521/service`, `_name` is the service name)
+- PostgreSQL: master node installs `python3-psycopg2`, runs `CheckJDBC.sh` and creates the schema when the `party` table is missing
+- Oracle: master node runs `CheckJDBC.sh` and fails when the connection does not work; the schema user must exist beforehand (`css/database/create-user.sql`, on RDS without DATAFILE paths). Tables are created by the server's database update on first start.
 
 Keycloak / Web frontends:
 - `censhare_server_keycloak_domain`, `censhare_server_keycloak_uri`, realm/user/client secrets, `censhare_server_host_port`

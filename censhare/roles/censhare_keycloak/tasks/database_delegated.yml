@@ -16,7 +16,7 @@
 
     - name: Create PostgreSQL user for Keycloak
       community.postgresql.postgresql_user:
-        db: postgres
+        login_db: postgres
         name: "{{ censhare_keycloak_db_user }}"
         password: "{{ censhare_keycloak_db_pass }}"
         state: present

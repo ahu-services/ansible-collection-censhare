@@ -41,3 +41,7 @@
 - name: Keycloak censhare Configuration
   ansible.builtin.include_tasks: keycloak_setup.yml
   tags: keycloak_setup
+- name: Keycloak LDAP user federation
+  when: censhare_keycloak_ldap_enabled | bool
+  ansible.builtin.include_tasks: ldap_federation.yml
+  tags: keycloak_setup

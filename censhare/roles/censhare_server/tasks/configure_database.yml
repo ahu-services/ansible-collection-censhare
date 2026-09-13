@@ -1,4 +1,10 @@
 ---
+- name: "Configure Database | Validate database type"
+  ansible.builtin.assert:
+    that:
+      - censhare_server_db_type in ['postgres', 'oracle']
+    fail_msg: "censhare_server_db_type must be 'postgres' or 'oracle' (got '{{ censhare_server_db_type }}')."
+
 - name: "Configure Database | Create custom database directory"
   become: true
   ansible.builtin.file:
@@ -20,7 +26,9 @@
     - css_update
 
 - name: "Configure Database | Install psycopg2"
-  when: censhare_server_css_id == 'master'
+  when:
+    - censhare_server_css_id == 'master'
+    - censhare_server_db_type == 'postgres'
   become: true
   ansible.builtin.dnf:
     name: "python3-psycopg2"
@@ -35,10 +43,11 @@
   failed_when: false
   check_mode: false
 
-- name: "Configure Database | Create tables if not exists"
+- name: "Configure Database | Create tables if not exists (PostgreSQL)"
   become: true
   when:
     - censhare_server_css_id == "master"
+    - censhare_server_db_type == 'postgres'
     - '"An error occured: org.postgresql.util.PSQLException: ERROR: relation \"party\" does not exist" in censhare_server_db_status.stdout_lines'
   community.postgresql.postgresql_script:
     login_host: "{{ censhare_server_db_host }}"
@@ -48,3 +57,18 @@
     login_password: "{{ censhare_server_db_pass }}"
     path: "{{ censhare_server_create_schema_script }}"
   no_log: true
+
+# Oracle: the role cannot create the schema (no sqlplus/oracledb on the host).
+# A fresh schema is filled by the server's database update on first start
+# (censhare.automatic.database.update / DatabaseUpdate.sh); an unreachable DB is
+# a hard error here so it is not discovered 15 minutes into the server start.
+- name: "Configure Database | Fail when the Oracle database is unreachable"
+  when:
+    - censhare_server_css_id == "master"
+    - censhare_server_db_type == 'oracle'
+    - "'Connected!' not in censhare_server_db_status.stdout"
+  ansible.builtin.fail:
+    msg: |
+      CheckJDBC.sh could not connect to {{ censhare_server_db_url }} as {{ censhare_server_db_user }}.
+      Create the schema/user first (css/database/create-user.sql) and check network/SG access.
+      {{ censhare_server_db_status.stdout_lines[-5:] | join('\n') }}

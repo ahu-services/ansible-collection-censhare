@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+{{ ansible_managed | comment('xml') }}
+<database
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="database.xsd"
+    enabled="true"
+    max-invocations="-1">
+  <!-- comment node for admin client -->
+  <comment/>
+
+  <!--
+    stm-prefetch-size: (Default 0)
+    use-integer-column-optimization: (Default false)
+        Use optimization for fetching integer column values.
+        Only works for JDBC Driver version 10!
+  -->
+  <connection
+      name="corpus"
+      connection-url="{{ censhare_server_db_url }}"
+      user-name="{{ censhare_server_db_user }}"
+      user-password="{{ censhare_server_db_pass }}"
+      min-open-startup="0"
+      min-open="0"
+      keep-open="5"
+      max-open="150"
+      wait-timeout="30"
+      connect-timeout="5"
+      connection-use-timeout="3600"
+      connection-expire-timeout="1200"
+      watchdog-timer="300"
+      statement-cache-size="50"
+      stm-prefetch-size="10"
+      remote-max-resultset-size="10000"
+      use-integer-column-optimization="true"
+      constraint-check-enabled="false"
+      constraint-check-definition="file:constraint-checks.xml"
+      log-execution-threshold="5000"
+      nls-sort="XGERMAN_DIN"
+      track-allocations="false">
+    <property name="oracle.jdbc.TcpNoDelay" value="true"/>
+    <property name="oracle.jdbc.FreeMemoryOnEnterImplicitCache" value="true"/>
+  </connection>
+</database>
+

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.0 - 2026-09-13
+
+### censhare_server
+
+- New versioned templates `2026.1/`, aligned with the shipped defaults of censhare-Server 2026.1.0-60 (launcher: Feature.OS/Marmind/Syndic8 properties; server: video-ai and ai-sovereign flags; services unchanged in structure), for censhare 2026.1 on Java 25: the launcher no longer sets `java.security.manager` / `java.security.policy` / `java.security.properties` (the Security Manager was removed from the server) and sets `jdk.xml.elementAttributeLimit=10000`.
+- New `censhare_server_db_type` (`postgres` default, `oracle`). `censhare_server_db_port` and `censhare_server_db_url` derive from it (Oracle: `jdbc:oracle:thin:@//host:1521/service`). With `oracle` the role skips psycopg2 and the PostgreSQL schema script, runs `CheckJDBC.sh` and fails early when the connection does not work.
+
+### censhare_keycloak
+
+- New `censhare_keycloak_api_timeout` (default 60 s) passed as `connection_timeout` to all Keycloak admin API tasks; the module default of 10 s is too short for realm creation on small instances.
+- Fix: the Keycloak version guard used `regex_search` in a `when:` (string result); ansible-core 2.19 requires boolean conditionals and failed the role. Now uses the `match` test.
+- New `censhare_keycloak_login_theme` (and per-realm `login_theme`) to select the realm login theme, e.g. the censhare theme.
+- Optional LDAP / Active Directory user federation (`censhare_keycloak_ldap_*`), applied to every configured realm, including with `censhare_keycloak_self_hosted: false` against an externally hosted Keycloak. Default mappers for username, email, first and last name.
+
 ## 1.3.0 - 2026-09-07
 
 ### censhare_keycloak
