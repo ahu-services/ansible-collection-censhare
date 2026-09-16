@@ -1,0 +1,21 @@
+{{ ansible_managed | comment }}
+#
+# Oracle Instant Client environment. ORACLE_HOME and LD_LIBRARY_PATH are
+# intentionally absent: the RPM registers its library directory in
+# /etc/ld.so.conf.d, and Instant Client runs without an ORACLE_HOME.
+
+# The client defaults to US7ASCII, which mangles the UTF-8 content of a
+# censhare schema on read and on write.
+export NLS_LANG="{{ censhare_server_oracle_client_nls_lang }}"
+export NLS_DATE_FORMAT="{{ censhare_server_oracle_client_date_format }}"
+
+# SQL*Plus 12.2+ reads login.sql from ORACLE_PATH only; SQLPATH still resolves @scripts.
+export ORACLE_PATH="{{ censhare_server_oracle_client_sqlpath }}"
+export SQLPATH="{{ censhare_server_oracle_client_sqlpath }}"
+
+# sqlplus itself is symlinked into /usr/bin by the RPM; the Data Pump and
+# SQL*Loader clients of the "tools" package are not.
+case ":$PATH:" in
+    *":{{ censhare_server_oracle_client_bin_dir }}:"*) ;;
+    *) [ -d "{{ censhare_server_oracle_client_bin_dir }}" ] && export PATH="$PATH:{{ censhare_server_oracle_client_bin_dir }}" ;;
+esac

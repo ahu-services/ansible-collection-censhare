@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.0 - unreleased
+
+### censhare_server
+
+- New: on `censhare_server_db_type: oracle` the role installs the Oracle Instant Client (`basic` + `sqlplus`, optionally `tools` for `expdp`/`impdp`/`sqlldr`) from yum.oracle.com, so the `corpus` user can inspect the database with `sqlplus`. Repository and GPG key are derived from the EL major version; Oracle's own release RPM is not used because its baseurl depends on the Oracle-Linux-only `$ociregion`/`$ocidomain` dnf variables.
+- New `censhare-sqlplus` helper (installed to `/usr/local/bin` and linked into `~corpus/localbin`, which is in the corpus PATH). It reads the credentials from the censhare database service config and feeds the `CONNECT` to SQL*Plus through a named pipe, so the password never reaches the process list, the shell history or a file. Handles both JDBC URL forms and keeps stdin on the terminal, so interactive sessions behave natively.
+- `/etc/profile.d/oracle-instantclient.sh` sets `NLS_LANG=AMERICAN_AMERICA.AL32UTF8` (the client default US7ASCII mangles UTF-8 content of a censhare schema), a sortable `NLS_DATE_FORMAT`, and `ORACLE_PATH`/`SQLPATH` for the shipped `login.sql`. `ORACLE_HOME` and `LD_LIBRARY_PATH` are deliberately not set.
+
 ## 1.4.1 - 2026-09-13
 
 ### censhare_server

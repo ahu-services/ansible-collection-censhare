@@ -1,0 +1,162 @@
+---
+# Oracle Instant Client: sqlplus for the corpus user, so the database of this
+# host can be inspected ad hoc. censhare itself does not use it - the server
+# and DatabaseUpdate.sh talk JDBC through the bundled thin driver.
+- name: "Install Oracle Client | Import the Oracle Linux signing key"
+  become: true
+  ansible.builtin.rpm_key:
+    state: present
+    key: "{{ censhare_server_oracle_client_repo_gpgkey }}"
+  tags:
+    - css_install
+    - css_update
+
+# Oracle's own release RPM cannot be used here: its baseurl relies on the
+# $ociregion/$ocidomain dnf variables, which only exist on Oracle Linux.
+- name: "Install Oracle Client | Configure the Instant Client repository"
+  become: true
+  ansible.builtin.yum_repository:
+    name: "ol{{ ansible_distribution_major_version }}_oracle_instantclient{{ censhare_server_oracle_client_major }}"
+    file: "oracle-instantclient"
+    description: "Oracle Instant Client {{ censhare_server_oracle_client_major }} (OL{{ ansible_distribution_major_version }})"
+    baseurl: "{{ censhare_server_oracle_client_repo_baseurl }}"
+    gpgkey: "{{ censhare_server_oracle_client_repo_gpgkey }}"
+    gpgcheck: true
+    enabled: false
+    state: present
+  tags:
+    - css_install
+    - css_update
+
+- name: "Install Oracle Client | Install the Instant Client packages"
+  become: true
+  ansible.builtin.dnf:
+    name: "{{ censhare_server_oracle_client_packages }}"
+    enablerepo: "ol{{ ansible_distribution_major_version }}_oracle_instantclient{{ censhare_server_oracle_client_major }}"
+    state: present
+    update_cache: true
+  tags:
+    - css_install
+    - css_update
+
+# ORACLE_HOME and LD_LIBRARY_PATH are deliberately NOT set: the RPM ships
+# /etc/ld.so.conf.d/oracle-instantclient.conf, and Instant Client is a
+# no-ORACLE_HOME mode. NLS_LANG matters - the client defaults to US7ASCII,
+# which mangles the UTF-8 content of a censhare schema.
+- name: "Install Oracle Client | Configure the client environment"
+  become: true
+  ansible.builtin.template:
+    src: "oracle/profile_oracle_instantclient_sh.j2"
+    dest: "/etc/profile.d/oracle-instantclient.sh"
+    owner: root
+    group: root
+    mode: "0644"
+  tags:
+    - css_install
+    - css_update
+    - css_server_config
+
+- name: "Install Oracle Client | Create the SQL*Plus profile directory"
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_server_oracle_client_sqlpath }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags:
+    - css_install
+    - css_update
+    - css_server_config
+
+- name: "Install Oracle Client | Create the SQL*Plus user profile"
+  become: true
+  ansible.builtin.template:
+    src: "oracle/login.sql.j2"
+    dest: "{{ censhare_server_oracle_client_sqlpath }}/login.sql"
+    owner: root
+    group: root
+    mode: "0644"
+  tags:
+    - css_install
+    - css_update
+    - css_server_config
+
+- name: "Install Oracle Client | Install the censhare-sqlplus helper"
+  become: true
+  ansible.builtin.template:
+    src: "oracle/censhare-sqlplus.j2"
+    dest: "{{ censhare_server_oracle_client_helper }}"
+    owner: root
+    group: root
+    mode: "0755"
+  tags:
+    - css_install
+    - css_update
+    - css_server_config
+
+# /usr/local/bin is not in the corpus PATH, but censhare's own localbin is.
+- name: "Install Oracle Client | Create the censhare local bin directory"
+  become: true
+  ansible.builtin.file:
+    path: "{{ censhare_server_home }}/localbin"
+    state: directory
+    owner: "corpus"
+    group: "corpus"
+    mode: "0755"
+  tags:
+    - css_install
+    - css_update
+    - css_server_config
+
+- name: "Install Oracle Client | Link the helper into the corpus PATH"
+  become: true
+  ansible.builtin.file:
+    src: "{{ censhare_server_oracle_client_helper }}"
+    dest: "{{ censhare_server_home }}/localbin/{{ censhare_server_oracle_client_helper | basename }}"
+    state: link
+    owner: "corpus"
+    group: "corpus"
+    follow: false
+  tags:
+    - css_install
+    - css_update
+    - css_server_config
+
+- name: "Install Oracle Client | Check that sqlplus runs as corpus"
+  become: true
+  become_user: "corpus"
+  ansible.builtin.command: "sqlplus -V"
+  register: censhare_server_oracle_client_version
+  changed_when: false
+  check_mode: false
+  tags:
+    - css_install
+    - css_update
+
+# Not fatal: on a fresh host the schema may not exist yet, and the point of
+# this task is to tell the operator which of the two it is.
+- name: "Install Oracle Client | Check that the database answers"
+  become: true
+  become_user: "corpus"
+  ansible.builtin.command: "{{ censhare_server_oracle_client_helper }} -S -n"
+  register: censhare_server_oracle_client_connect
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: censhare_server_oracle_client_verify_connection | bool
+  tags:
+    - css_install
+    - css_update
+
+# Note the parentheses: "|" binds tighter than "==" in Jinja.
+- name: "Install Oracle Client | Report the client status"
+  ansible.builtin.debug:
+    msg: >-
+      {{ censhare_server_oracle_client_version.stdout_lines | default([]) | select('search', 'Release') | first | default('sqlplus installed') }} -
+      {{ (((censhare_server_oracle_client_connect.rc | default(1)) == 0)
+          | ternary('censhare-sqlplus reads the database configuration',
+                    'censhare-sqlplus cannot read the database configuration yet')) }}
+  tags:
+    - css_install
+    - css_update

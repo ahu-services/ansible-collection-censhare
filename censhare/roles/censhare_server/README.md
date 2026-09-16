@@ -12,6 +12,7 @@ This role installs and configures the censhare Server stack (Server, Core Cloud 
 - Optionally mounts and links filesystems for assets/archive/interfaces; configures Keycloak and mail service XML when enabled.
 - Sets SELinux port labels for CGW/SRS when SELinux is enforcing; opens firewall ports (9000, 8081, 8082, 30546) if firewalld is running.
 - Deploys webpack artifacts for SRS (download + unarchive) and starts/enables `censhare.core-cloud-gateway` and `censhare.static-resource-server`.
+- On Oracle systems, installs the Oracle Instant Client (`sqlplus`) from yum.oracle.com and a `censhare-sqlplus` helper, so the `corpus` user can inspect the database ad hoc.
 - Supports remote-service setups (SSH key distribution, keystore generation, template sync) when `censhare_server_remote_server` is true.
 
 ## Requirements
@@ -41,6 +42,30 @@ Database:
 Keycloak / Web frontends:
 - `censhare_server_keycloak_domain`, `censhare_server_keycloak_uri`, realm/user/client secrets, `censhare_server_host_port`
 - Webpack deploy toggled via `censhare_server_srs_deploy_webpack_artifact` (default `true`); artifact URL uses repo credentials
+
+Oracle client (`censhare_server_db_type: oracle` only):
+- `censhare_server_oracle_client_enabled` (default: true when the db type is `oracle`) installs `oracle-instantclient-basic` + `-sqlplus` from `yum.oracle.com` and writes `/etc/profile.d/oracle-instantclient.sh`
+- `censhare_server_oracle_client_major` (`23`), `censhare_server_oracle_client_repo_baseurl` / `_repo_gpgkey` (derived from the EL major version; the Oracle release RPM cannot be used on AlmaLinux/Rocky because its baseurl needs the Oracle-Linux-only `$ociregion` variable)
+- `censhare_server_oracle_client_tools` (default `false`) adds `oracle-instantclient-tools` with `expdp`/`impdp`/`sqlldr` for migration hosts
+- `censhare_server_oracle_client_nls_lang` (`AMERICAN_AMERICA.AL32UTF8`), `_date_format`, `_linesize`, `_pagesize` shape the environment and the `login.sql` in `censhare_server_oracle_client_sqlpath`
+- `censhare_server_oracle_client_helper` (`/usr/local/bin/censhare-sqlplus`, linked into `~corpus/localbin`), `censhare_server_oracle_client_verify_connection`
+
+`ORACLE_HOME` and `LD_LIBRARY_PATH` are deliberately not set: the RPM registers its library directory in `/etc/ld.so.conf.d`, and Instant Client runs without an `ORACLE_HOME`.
+
+### censhare-sqlplus
+
+```bash
+censhare-sqlplus                              # interactive session
+censhare-sqlplus "SELECT count(*) FROM asset;"  # one statement, then exit
+censhare-sqlplus -S report.sql                # run a script silently
+echo 'SELECT user FROM dual;' | censhare-sqlplus -S
+censhare-sqlplus -n                           # show config, user and connect string
+```
+
+It reads `connection-url`, `user-name` and `user-password` of the `<connection>` element from
+`services/database/config.<CSS_ID>.xml` and feeds the `CONNECT` to SQL*Plus through a named pipe:
+the password never appears in the process list, in the shell history or in a file. Both JDBC URL
+forms are supported (`@//host:port/service` and the older `@host:port:SID`).
 
 Mail and TLS automation:
 - `censhare_server_mail_*` flags/credentials control optional mail service XML

@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+{{ ansible_managed | comment }}
+#
+# censhare-sqlplus - open a SQL*Plus session against the censhare database of
+# this host, using the credentials the censhare server itself uses.
+#
+# The password is read from the censhare database service configuration and
+# handed to SQL*Plus through a named pipe that is only ever opened by this
+# user. It never appears in the process list, in the shell history, or in a
+# file on disk.
+#
+#   censhare-sqlplus                          interactive session
+#   censhare-sqlplus "SELECT * FROM v$version;"
+#   censhare-sqlplus report.sql               run a script, then exit
+#   echo 'SELECT user FROM dual;' | censhare-sqlplus -S
+#
+set -u
+set +x                             # never trace: the CONNECT line holds the password
+ulimit -c 0 2>/dev/null || true    # no core dump of a process holding the password
+
+PROG=${0##*/}
+SYSCONFIG=${CENSHARE_SYSCONFIG:-/etc/sysconfig/censhare}
+SERVICES_PATH=${CENSHARE_SERVICES_PATH:-{{ censhare_server_services_path }}}
+PYTHON=${CENSHARE_PYTHON:-/usr/bin/python3}
+
+die() { printf '%s: %s\n' "$PROG" "$*" >&2; exit 1; }
+
+usage() {
+    cat <<USAGE
+Usage: $PROG [options] [sqlplus-options] [SQL statement | script.sql | @script.sql ...]
+
+Connects to the censhare database configured for this host (CSS_ID from
+$SYSCONFIG) as the censhare database user.
+
+  $PROG                              interactive session
+  $PROG "SELECT count(*) FROM asset;"  run one statement, then exit
+  $PROG -S report.sql                run a script silently
+  echo 'SELECT user FROM dual;' | $PROG -S
+
+Options of $PROG itself:
+  -c, --connection NAME   <connection name="..."> to use (default: first, or "corpus")
+  -n, --dry-run           show user and connect string, never the password
+  -h, --help              this text
+Anything else starting with "-" is passed through to sqlplus (e.g. -S, -L).
+USAGE
+}
+
+conn_name=""
+dry_run=0
+batch=0
+sp_opts=()
+commands=()
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -h|--help)       usage; exit 0 ;;
+        -n|--dry-run)    dry_run=1; shift ;;
+        -c|--connection) [ "$#" -ge 2 ] || die "$1 needs an argument"; conn_name=$2; shift 2 ;;
+        -M|-markup)      [ "$#" -ge 2 ] || die "$1 needs an argument"; sp_opts+=("$1" "$2"); shift 2 ;;
+        --)              shift; while [ "$#" -gt 0 ]; do commands+=("$1"); batch=1; shift; done ;;
+        -*)              sp_opts+=("$1"); shift ;;
+        @*)              commands+=("$1"); batch=1; shift ;;
+        *)               if [ -f "$1" ]; then commands+=("@$1"); else commands+=("$1"); fi; batch=1; shift ;;
+    esac
+done
+
+# CSS_ID: /etc/sysconfig/censhare is a systemd EnvironmentFile - parse it, do not source it.
+css_id=${CSS_ID:-}
+if [ -z "$css_id" ] && [ -r "$SYSCONFIG" ]; then
+    css_id=$(sed -n 's/^[[:space:]]*\(export[[:space:]]\+\)\?CSS_ID[[:space:]]*=[[:space:]]*//p' "$SYSCONFIG" |
+             tail -n 1 | sed -e 's/^"\(.*\)"[[:space:]]*$/\1/' -e "s/^'\(.*\)'[[:space:]]*\$/\1/" -e 's/[[:space:]#].*$//')
+fi
+[ -n "$css_id" ] || css_id=master
+
+cfg=${CENSHARE_DB_CONFIG:-$SERVICES_PATH/database/config.$css_id.xml}
+[ -e "$cfg" ] || die "database config $cfg does not exist (CSS_ID=$css_id).
+Set CENSHARE_DB_CONFIG=/path/to/config.xml or check $SYSCONFIG."
+[ -r "$cfg" ] || die "cannot read $cfg - run this as the {{ censhare_server_corpus_user | default('corpus') }} user (you are $(id -un))."
+command -v sqlplus >/dev/null 2>&1 || die "sqlplus not found in PATH (Oracle Instant Client not installed?)"
+[ -x "$PYTHON" ] || die "$PYTHON not found, needed to read $cfg"
+
+# Credentials are parsed into shell variables over a pipe - never a temp file,
+# because bash implements here-strings and here-documents with a file in $TMPDIR.
+exec 3< <("$PYTHON" - "$cfg" "$conn_name" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+
+path = sys.argv[1]
+want = sys.argv[2] if len(sys.argv) > 2 else ""
+
+try:
+    root = ET.parse(path).getroot()
+except Exception as exc:                                     # noqa: BLE001 - message goes to the operator
+    sys.exit("cannot parse %s: %s" % (path, exc))
+
+conns = [e for e in root.iter() if e.tag.rsplit('}', 1)[-1] == 'connection']
+if not conns:
+    sys.exit("no <connection> element in %s" % path)
+if want:
+    conns = [c for c in conns if c.get('name') == want]
+    if not conns:
+        sys.exit("no <connection name=%r> in %s" % (want, path))
+else:
+    conns = [c for c in conns if c.get('name') == 'corpus'] or conns
+conn = conns[0]
+
+url = (conn.get('connection-url') or '').strip()
+user = (conn.get('user-name') or '').strip()
+password = conn.get('user-password') or ''
+if not url or not user:
+    sys.exit("connection-url or user-name missing in %s" % path)
+for label, value in (("user-name", user), ("user-password", password)):
+    if '\n' in value or '\r' in value:
+        sys.exit("%s contains a newline - cannot pass it to SQL*Plus" % label)
+if '"' in password:
+    sys.exit('the password contains a double quote, which SQL*Plus CONNECT cannot quote reliably')
+
+# jdbc:oracle:thin:@//host:port/service  ->  Easy Connect
+# jdbc:oracle:thin:@host:port:SID        ->  full descriptor (Easy Connect has no SID form)
+body = url.split('@', 1)[1] if '@' in url else ''
+if body.startswith('//'):
+    hostport, _, service = body[2:].partition('/')
+    host, _, port = hostport.partition(':')
+    connect = "//%s:%s/%s" % (host, port or '1521', service)
+else:
+    parts = body.split(':')
+    if len(parts) != 3:
+        sys.exit("unsupported connection-url %r" % url)
+    host, port, sid = parts
+    connect = ("(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=%s)(PORT=%s))"
+               "(CONNECT_DATA=(SID=%s)))" % (host, port, sid))
+
+sys.stdout.write("%s\n%s\n%s\n" % (user, connect, password))
+PY
+) || die "cannot read the database configuration"
+
+IFS= read -r db_user <&3 || die "cannot read the database configuration (see the error above)"
+IFS= read -r db_connect <&3 || die "cannot read the database configuration (see the error above)"
+IFS= read -r db_password <&3 || db_password=""
+exec 3<&-
+
+if [ "$dry_run" -eq 1 ]; then
+    printf 'config:  %s\nuser:    %s\nconnect: %s\n' "$cfg" "$db_user" "$db_connect"
+    exit 0
+fi
+
+# The CONNECT is fed to SQL*Plus through a FIFO used as its start file: nothing
+# is written to disk and stdin stays the terminal, so the session behaves
+# exactly like a native sqlplus one.
+tmp=$(mktemp -d) || die "cannot create a temporary directory"
+fifo="$tmp/connect.sql"
+mkfifo -m 600 "$fifo" || die "cannot create $fifo"
+
+writer_pid=""
+cleanup() {
+    [ -n "$writer_pid" ] && kill "$writer_pid" 2>/dev/null
+    rm -rf "$tmp"
+}
+trap cleanup EXIT
+trap ':' INT QUIT           # trapped, not ignored: children still get the default handler
+trap 'cleanup; exit 143' TERM HUP
+
+(
+    trap '' INT QUIT
+    {
+        printf 'CONNECT %s/"%s"@%s\n' "$db_user" "$db_password" "$db_connect"
+        for c in ${commands+"${commands[@]}"}; do printf '%s\n' "$c"; done
+        [ "$batch" -eq 1 ] && printf 'EXIT\n'
+    } > "$fifo"
+) &
+writer_pid=$!
+
+sqlplus -L ${sp_opts+"${sp_opts[@]}"} /nolog "@$fifo"
+rc=$?
+exit "$rc"

@@ -10,3 +10,7 @@ censhare_server_create_schema_script: "{{ censhare_server_home }}/css/database/p
 # vars for certbot
 censhare_server_acme_directory_staging: "https://acme-staging-v02.api.letsencrypt.org/directory"
 censhare_server_acme_directory_live: "https://acme-v02.api.letsencrypt.org/directory"
+
+# vars for the Oracle Instant Client (paths owned by the RPM layout)
+censhare_server_oracle_client_lib_dir: "/usr/lib/oracle/{{ censhare_server_oracle_client_major }}/client64/lib"
+censhare_server_oracle_client_bin_dir: "/usr/lib/oracle/{{ censhare_server_oracle_client_major }}/client64/bin"

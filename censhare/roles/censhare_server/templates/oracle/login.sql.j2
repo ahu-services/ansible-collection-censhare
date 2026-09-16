@@ -1,0 +1,14 @@
+-- {{ ansible_managed }}
+--
+-- SQL*Plus user profile, read from ORACLE_PATH at startup and after every
+-- CONNECT. Client-side SET commands only: this file also runs before a
+-- connection exists (sqlplus /nolog), where ALTER SESSION would fail.
+-- Session settings such as the date format come from the environment
+-- (NLS_DATE_FORMAT in /etc/profile.d/oracle-instantclient.sh).
+SET LINESIZE {{ censhare_server_oracle_client_linesize }}
+SET PAGESIZE {{ censhare_server_oracle_client_pagesize }}
+SET TRIMSPOOL ON
+SET TAB OFF
+SET NUMWIDTH 18
+SET LONG 10000
+SET SQLPROMPT "_USER'@'_CONNECT_IDENTIFIER> "

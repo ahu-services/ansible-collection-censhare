@@ -51,6 +51,14 @@
   tags:
     - css_install
 
+- name: "Install the Oracle client (sqlplus)"
+  when: censhare_server_oracle_client_enabled | bool
+  ansible.builtin.include_tasks: install_oracle_client.yml
+  tags:
+    - css_install
+    - css_update
+    - css_server_config
+
 - name: "Configure Server and Launcher"
   ansible.builtin.include_tasks: configure_server.yml
   tags:

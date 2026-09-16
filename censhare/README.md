@@ -15,6 +15,7 @@ Current default versions (subject to change with collection releases):
 - `censhare_server`: `censhare_server_version=2025.2.0`, `censhare_server_cgw_version=4.1.2-1`, `censhare_server_srs_version=4.0.1-1` (XML templates available for 2023.1 … 2026.1)
 - `censhare_sclient`: `censhare_sclient_censhare_version=2025.2.0`, `censhare_sclient_tools_version=1.8.1`, `censhare_sclient_collabora_version=25.04.7.3.1`
 - `censhare_keycloak`: `censhare_keycloak_version=26.7.3` (minimum 26.0), `censhare_keycloak_db_version=17`
+- `censhare_server` Oracle client: Instant Client major `23` (installed only when `censhare_server_db_type: oracle`)
 
 ## Installation
 
@@ -28,7 +29,7 @@ ansible-galaxy collection install ahu_services.censhare
 
 This collection includes the following roles:
 
-- **`censhare_server`**: Installs and configures the core censhare Server stack, including the Core Cloud Gateway (CGW) and Static Resource Server (SRS). It manages repositories, RPMs, firewall rules, SELinux policies, and service configurations.
+- **`censhare_server`**: Installs and configures the core censhare Server stack, including the Core Cloud Gateway (CGW) and Static Resource Server (SRS). It manages repositories, RPMs, firewall rules, SELinux policies, and service configurations, and on Oracle systems the Oracle Instant Client plus a `censhare-sqlplus` helper for ad-hoc database access.
 
 - **`censhare_keycloak`**: Deploys and configures Keycloak as the authentication service for the censhare environment. It can manage Keycloak and its database in containers and handles realms, clients, and users.
 

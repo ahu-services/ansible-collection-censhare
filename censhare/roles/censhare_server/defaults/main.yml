@@ -59,6 +59,30 @@ censhare_server_db_url: >-
      | ternary('jdbc:oracle:thin:@//' ~ censhare_server_db_host ~ ':' ~ censhare_server_db_port ~ '/' ~ censhare_server_db_name,
                'jdbc:postgresql://' ~ censhare_server_db_host ~ ':' ~ censhare_server_db_port ~ '/' ~ censhare_server_db_name) }}
 
+# Variables for the Oracle client (Instant Client, only relevant with db_type oracle)
+# Gives the corpus user a working sqlplus plus the censhare-sqlplus helper for
+# ad-hoc database checks. censhare itself does not use it: server and
+# DatabaseUpdate.sh talk JDBC through the bundled thin driver.
+censhare_server_oracle_client_enabled: "{{ censhare_server_db_type == 'oracle' }}"
+censhare_server_oracle_client_major: "23"
+# Data Pump and SQL*Loader clients (expdp, impdp, sqlldr); enable on a migration host.
+censhare_server_oracle_client_tools: false
+censhare_server_oracle_client_repo_baseurl: >-
+  https://yum.oracle.com/repo/OracleLinux/OL{{ ansible_distribution_major_version }}/oracle/instantclient{{ censhare_server_oracle_client_major }}/$basearch/
+censhare_server_oracle_client_repo_gpgkey: >-
+  https://yum.oracle.com/RPM-GPG-KEY-oracle-ol{{ ansible_distribution_major_version }}
+censhare_server_oracle_client_packages: >-
+  {{ ['oracle-instantclient-basic', 'oracle-instantclient-sqlplus']
+     + (['oracle-instantclient-tools'] if censhare_server_oracle_client_tools | bool else []) }}
+# The client defaults to US7ASCII, which mangles UTF-8 content of a censhare schema.
+censhare_server_oracle_client_nls_lang: "AMERICAN_AMERICA.AL32UTF8"
+censhare_server_oracle_client_date_format: "YYYY-MM-DD HH24:MI:SS"
+censhare_server_oracle_client_linesize: 200
+censhare_server_oracle_client_pagesize: 50
+censhare_server_oracle_client_sqlpath: "/etc/oracle/sqlplus"
+censhare_server_oracle_client_helper: "/usr/local/bin/censhare-sqlplus"
+censhare_server_oracle_client_verify_connection: true
+
 # Variables for filesystem configuration
 censhare_server_filesystems: []
 ## Example: This will overwrite existing assets, archive and interfaces entries, so add them here as well
