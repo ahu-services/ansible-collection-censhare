@@ -116,6 +116,7 @@ censhare_server_keycloak_desktop_id: "desktop-app"
 censhare_server_keycloak_desktop_secret: "195c1ea2-9748-4bca-91b3-8aa6896362bc"
 censhare_server_host_port: "localhost:9000"
 censhare_server_srs_host_port: "localhost:8081"
+censhare_server_cgw_host_port: "localhost:8082"
 censhare_server_srs_deploy_webpack_artifact: true
 censhare_server_static_resource_server_webpack_artifact_url: "https://\
   {{ censhare_server_repo_host }}/artifactory/webpack-release/\

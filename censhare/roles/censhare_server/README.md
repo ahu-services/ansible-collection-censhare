@@ -41,6 +41,7 @@ Database:
 
 Keycloak / Web frontends:
 - `censhare_server_keycloak_domain`, `censhare_server_keycloak_uri`, realm/user/client secrets, `censhare_server_host_port`
+- `censhare_server_srs_host_port` (default `localhost:8081`) and `censhare_server_cgw_host_port` (default `localhost:8082`): internal host:port of the Static Resource Server and of the Cloud Gateway itself (style guide route). The CGW template carries the full route list (it replaces the CGW defaults), aligned with CGW 4.1.6: CI Hub (`/cihub/**`), uploads with sub paths, cookie filters on the SRS routes, plus one route set per entry of `censhare_server_cgw_brandings`.
 - Webpack deploy toggled via `censhare_server_srs_deploy_webpack_artifact` (default `true`); artifact URL uses repo credentials
 
 Oracle client (`censhare_server_db_type: oracle` only):
