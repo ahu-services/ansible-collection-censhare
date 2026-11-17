@@ -18,10 +18,10 @@ logging.level.com.censhare.core.cloudgateway.RequestLoggingFilter: INFO
 # logging.level.org.springframework.web: TRACE
 # logging.level.org.springframework.web.HttpLogging: TRACE
 
-# Uncomment this line, if Zipkin is NOT available (e.g. on test or local environments)
+# Zipkin is not available
 spring.zipkin.enabled: false
 
-# Uncomment this if OpenTelemetry Collector in Jaeger is NOT available
+# No OpenTelemetry collector available
 otel.sdk.disabled: true
 
 ## keycloak client ID and name
@@ -84,6 +84,9 @@ CENSHARE_SERVER_HOST_PORT: {{ censhare_server_host_port }}
 # INTERNAL hostname (and optionally also a port) used to connect to the Static Resource Server
 SRS_HOST_PORT: {{ censhare_server_srs_host_port }}
 
+# INTERNAL hostname (and optionally also a port) of this Cloud Gateway, used by the style guide route
+CGW_HOST_PORT: {{ censhare_server_cgw_host_port }}
+
 spring.cloud.gateway.routes:
 
 ## OPTIONAL: Route for handling a back-channel logout call from Keycloak
@@ -94,6 +97,15 @@ spring.cloud.gateway.routes:
 #      - Path=/backchannel/logout
 #    filters:
 #      - BackchannelLogout
+
+        ## CI Hub API, passed to the censhare-Server without login redirect
+        ## (cg.bypassAuthUrlPatterns: /cihub/** comes from the CGW defaults)
+        - id: censhare5_cihub_endpoint
+          uri: http://${CENSHARE_SERVER_HOST_PORT}
+          predicates:
+            - Path=/cihub/**
+          filters:
+            - CustomTokenRelay
 
 {% for branding in censhare_server_cgw_brandings %}
         ## Route for external password change. Opens Keycloak's account page.
@@ -122,9 +134,8 @@ spring.cloud.gateway.routes:
             - CustomTokenRelay
 
         ## Route for external style guide. Opens censhare style guide page.
-        ## Please change http://localhost:8082 URL to point to your cloud gateway server.
         - id: {{ branding.name }}_styleguide
-          uri: http://localhost:8082
+          uri: http://${CGW_HOST_PORT}
           predicates:
             - Path={{ branding.path }}/styleguide/**
           filters:
@@ -134,9 +145,9 @@ spring.cloud.gateway.routes:
         - id: {{ branding.name }}_upload_endpoint
           uri: http://${CENSHARE_SERVER_HOST_PORT}
           predicates:
-            - Path={{ branding.path }}/upload
+            - Path={{ branding.path }}/upload/**
           filters:
-            - RewritePath={{ branding.path }}/upload, /webserver/upload
+            - RewritePath={{ branding.path }}/upload(?<segment>/?.*), /webserver/upload$\{segment}
             - CustomTokenRelay
 
         ## Routes to censhare-Server, please change ws://censhare-server URLs to point to your censhare-Server.
@@ -159,6 +170,8 @@ spring.cloud.gateway.routes:
             - RewritePath={{ branding.path }}/(?<segment>.*), /$\{segment}
             - RewritePath={{ branding.path }}, /
             - CustomTokenRelay
+            - RemoveRequestHeader=Cookie
+            - AddResponseHeader=Set-Cookie, CENSHARE_USER_LOGIN==============
             - AddRequestHeader=Branding, {{ branding.name }}
 
 {% endfor %}
@@ -168,5 +181,7 @@ spring.cloud.gateway.routes:
             - Path=/**
           filters:
             - CustomTokenRelay
+            - RemoveRequestHeader=Cookie
+            - AddResponseHeader=Set-Cookie, CENSHARE_USER_LOGIN==============
             # Passing default branding for customers that have more than one branding
             - AddRequestHeader=Branding, {{ censhare_server_cgw_default_branding.name }}
